@@ -1,3 +1,3 @@
-"""AI Development Operating System — Round 4A (local CI / PR validation)."""
+"""AI Development Operating System — Round 4C (evidence-first reporting)."""
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"

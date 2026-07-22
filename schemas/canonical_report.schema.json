@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/canonical_report.schema.json",
+  "title": "CanonicalReportSnapshot",
+  "type": "object",
+  "required": [
+    "report_id",
+    "schema_version",
+    "report_policy_version",
+    "relevance_policy_version",
+    "redaction_policy_version",
+    "renderer_version",
+    "report_status",
+    "audience",
+    "detail_level",
+    "project_id",
+    "task_id",
+    "evidence_manifest",
+    "claim_records",
+    "report_fingerprint",
+    "source_set_fingerprint"
+  ],
+  "properties": {
+    "report_id": { "type": "string" },
+    "schema_version": { "type": "string", "const": "4c.1" },
+    "report_policy_version": { "type": "string", "const": "4c.1" },
+    "relevance_policy_version": { "type": "string", "const": "4c.1" },
+    "redaction_policy_version": { "type": "string", "const": "4c.1" },
+    "renderer_version": { "type": "string", "const": "4c.1" },
+    "report_status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "complete_with_notes",
+        "incomplete",
+        "conflicting_evidence",
+        "blocked",
+        "invalid",
+        "stale"
+      ]
+    },
+    "audience": {
+      "type": "string",
+      "enum": [
+        "executive",
+        "operator",
+        "developer",
+        "independent_reviewer",
+        "auditor"
+      ]
+    },
+    "detail_level": {
+      "type": "string",
+      "enum": ["summary", "standard", "full", "audit"]
+    },
+    "project_id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "evidence_manifest": { "type": "array" },
+    "claim_records": { "type": "array" },
+    "report_fingerprint": { "type": ["string", "null"] },
+    "source_set_fingerprint": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

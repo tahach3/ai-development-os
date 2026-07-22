@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/evidence_item.schema.json",
+  "title": "EvidenceItem",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "schema_version",
+    "evidence_type",
+    "source_type",
+    "source_record_type",
+    "source_record_id",
+    "verification_status"
+  ],
+  "properties": {
+    "evidence_id": { "type": "string" },
+    "schema_version": { "type": "string", "const": "4c.1" },
+    "evidence_type": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "reported",
+        "inferred",
+        "conflicting",
+        "unavailable",
+        "not_applicable"
+      ]
+    },
+    "structured_value": { "type": "object" },
+    "safe_summary": { "type": "string" },
+    "integrity_hash": { "type": ["string", "null"] },
+    "authority_level": { "type": "string" },
+    "legacy_support": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

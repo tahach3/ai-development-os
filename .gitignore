@@ -52,6 +52,14 @@ workspace/context/*
 !workspace/context/.gitkeep
 workspace/ci_runs/*
 !workspace/ci_runs/.gitkeep
+workspace/sessions/*
+!workspace/sessions/.gitkeep
+workspace/executions/*
+!workspace/executions/.gitkeep
+workspace/orchestrations/*
+!workspace/orchestrations/.gitkeep
+workspace/provider_executions/*
+!workspace/provider_executions/.gitkeep
 
 # Local project registry (example stays tracked)
 config/projects.yaml

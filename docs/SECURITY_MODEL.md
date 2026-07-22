@@ -49,6 +49,15 @@ Round 4A CI / PR validation adds:
 - Safety-critical path changes → human review classification (not auto-approve)
 - GitHub workflow: `permissions.contents: read` only; no secrets; no live providers; not executed/pushed in Round 4A
 
+Round 4C reporting adds:
+
+- Fail-closed report redaction before persistence of user-facing fields
+- Claim statuses prevent silent promotion of agent statements to verified facts
+- No raw prompts/transcripts/secrets in reports; Equitify identifiers rejected
+- `vulnerability_scan: unavailable` unless a real vulnerability database was queried (never in 4C)
+- Report generation never executes commands selected from report content
+- Runtime reports remain local and gitignored
+
 ## Validation
 
 - Explicit required fields and enums
@@ -58,7 +67,8 @@ Round 4A CI / PR validation adds:
 - Malformed provider output cannot become impl/review/repair input
 - Orchestration schema `3c.1`; unsupported versions fail closed
 - CI schema/policy `4a.1`; unsupported versions fail closed
+- Reporting schema/policy `4c.1`; fingerprint + freshness validation fail closed
 
 ## Trust boundary
 
-Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.
+Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.

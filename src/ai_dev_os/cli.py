@@ -97,6 +97,9 @@ def cmd_init(_args: argparse.Namespace) -> int:
         "workspace/behavioral_reports",
         "workspace/reports/implementation",
         "workspace/reports/review",
+        "workspace/reports/canonical",
+        "workspace/reports/rendered",
+        "workspace/reports/manifests",
         "workspace/handoffs",
         "workspace/context",
         "workspace/plans",
@@ -1085,10 +1088,145 @@ def cmd_validate_change(args: argparse.Namespace) -> int:
     return exit_code_for_pr_summary(summary)
 
 
+def cmd_build_report(args: argparse.Namespace) -> int:
+    from . import __version__ as pkg_version
+    from .reporting_builder import ReportingBuildError
+    from .reporting_cli import ReportingCLIError, build_and_persist, load_bundle
+    from .reporting_models import DetailLevel, ReportAudience
+
+    try:
+        bundle = load_bundle(Path(args.evidence_bundle))
+        if args.project_id:
+            bundle.project_id = args.project_id
+        if args.task_id:
+            bundle.task_id = args.task_id
+        if args.orchestration_id:
+            bundle.orchestration_id = args.orchestration_id
+        audience = ReportAudience(args.audience)
+        detail = DetailLevel(args.detail_level)
+        ws = Path(args.workspace) if args.workspace else None
+        snapshot = build_and_persist(
+            bundle,
+            audience=audience,
+            detail_level=detail,
+            workspace_root=ws,
+            producer_version=pkg_version,
+        )
+    except (ReportingBuildError, ReportingCLIError, OSError, ValueError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    payload = {
+        "report_id": snapshot.report_id,
+        "report_status": snapshot.report_status.value,
+        "report_fingerprint": snapshot.report_fingerprint,
+        "source_set_fingerprint": snapshot.source_set_fingerprint,
+        "audience": snapshot.audience.value,
+        "detail_level": snapshot.detail_level.value,
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_render_report(args: argparse.Namespace) -> int:
+    from .reporting_cli import ReportingCLIError, render_and_persist
+    from .reporting_models import DetailLevel, ReportAudience
+    from .reporting_store import CanonicalReportStore
+
+    try:
+        ws = Path(args.workspace) if args.workspace else None
+        store = CanonicalReportStore(workspace_root=ws)
+        snapshot = store.load_canonical(args.report_id)
+        if args.audience:
+            snapshot.audience = ReportAudience(args.audience)
+        if args.detail_level:
+            snapshot.detail_level = DetailLevel(args.detail_level)
+        current = None
+        if args.current_bindings:
+            current = json.loads(Path(args.current_bindings).read_text(encoding="utf-8"))
+        md, path = render_and_persist(
+            snapshot,
+            workspace_root=ws,
+            allow_incomplete_diagnostic=bool(args.allow_incomplete_diagnostic),
+            current_bindings=current,
+        )
+    except (ReportingCLIError, FileNotFoundError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if args.output:
+        Path(args.output).write_text(md, encoding="utf-8")
+    if args.json:
+        print(json.dumps({"report_id": snapshot.report_id, "path": str(path)}, indent=2))
+    else:
+        print(md)
+    return 0
+
+
+def cmd_validate_report(args: argparse.Namespace) -> int:
+    from .reporting_store import CanonicalReportStore
+    from .reporting_validate import validate_snapshot
+
+    ws = Path(args.workspace) if args.workspace else None
+    store = CanonicalReportStore(workspace_root=ws)
+    try:
+        snapshot = store.load_canonical(args.report_id)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    current = None
+    if args.current_bindings:
+        current = json.loads(Path(args.current_bindings).read_text(encoding="utf-8"))
+    result = validate_snapshot(
+        snapshot,
+        current_bindings=current,
+        allow_incomplete_diagnostic=bool(args.allow_incomplete_diagnostic),
+    )
+    print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+    return 0 if result.ok else 1
+
+
+def cmd_show_report(args: argparse.Namespace) -> int:
+    from .reporting_store import CanonicalReportStore
+
+    ws = Path(args.workspace) if args.workspace else None
+    store = CanonicalReportStore(workspace_root=ws)
+    try:
+        snapshot = store.load_canonical(args.report_id)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if args.format == "json" or args.json:
+        # Safe summary — no raw evidence structured dumps of secrets
+        safe = {
+            "report_id": snapshot.report_id,
+            "report_status": snapshot.report_status.value,
+            "audience": snapshot.audience.value,
+            "detail_level": snapshot.detail_level.value,
+            "task_id": snapshot.task_id,
+            "project_id": snapshot.project_id,
+            "outcome": snapshot.outcome,
+            "final_verdict": snapshot.final_verdict,
+            "blockers": snapshot.blockers,
+            "report_fingerprint": snapshot.report_fingerprint,
+            "source_set_fingerprint": snapshot.source_set_fingerprint,
+            "unavailable_mandatory": snapshot.unavailable_mandatory,
+            "evidence_ids": [e.evidence_id for e in snapshot.evidence_manifest],
+            "executive_summary": snapshot.executive_summary,
+        }
+        print(json.dumps(safe, indent=2, sort_keys=True))
+    else:
+        print(f"report_id={snapshot.report_id}")
+        print(f"status={snapshot.report_status.value}")
+        print(f"task_id={snapshot.task_id}")
+        print(f"outcome={snapshot.outcome}")
+        print(f"blockers={len(snapshot.blockers)}")
+        print(f"fingerprint={snapshot.report_fingerprint}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai-dev-os",
-        description="AI Development Operating System (Round 4A)",
+        description="AI Development Operating System (Round 4C)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1473,6 +1611,80 @@ def build_parser() -> argparse.ArgumentParser:
     p_vc.add_argument("--base", default=None, help="Base ref (e.g. master); omit for working tree")
     p_vc.add_argument("--head", default="HEAD")
     p_vc.set_defaults(func=cmd_validate_change)
+
+    p_br = sub.add_parser(
+        "build-report",
+        help="Build a canonical evidence-first report snapshot (no model)",
+    )
+    p_br.add_argument(
+        "--evidence-bundle",
+        required=True,
+        help="Path to JSON evidence bundle (persisted/synthetic records)",
+    )
+    p_br.add_argument("--project-id", default=None)
+    p_br.add_argument("--task-id", default=None)
+    p_br.add_argument("--orchestration-id", default=None)
+    p_br.add_argument(
+        "--audience",
+        default="developer",
+        choices=[
+            "executive",
+            "operator",
+            "developer",
+            "independent_reviewer",
+            "auditor",
+        ],
+    )
+    p_br.add_argument(
+        "--detail-level",
+        default="standard",
+        choices=["summary", "standard", "full", "audit"],
+    )
+    p_br.add_argument("--workspace", default=None, help="Workspace root override")
+    p_br.set_defaults(func=cmd_build_report)
+
+    p_rrd = sub.add_parser("render-report", help="Render Markdown from a canonical report")
+    p_rrd.add_argument("--report-id", required=True)
+    p_rrd.add_argument(
+        "--audience",
+        default=None,
+        choices=[
+            "executive",
+            "operator",
+            "developer",
+            "independent_reviewer",
+            "auditor",
+        ],
+    )
+    p_rrd.add_argument(
+        "--detail-level",
+        default=None,
+        choices=["summary", "standard", "full", "audit"],
+    )
+    p_rrd.add_argument("--workspace", default=None)
+    p_rrd.add_argument("--output", default=None)
+    p_rrd.add_argument("--json", action="store_true")
+    p_rrd.add_argument("--allow-incomplete-diagnostic", action="store_true")
+    p_rrd.add_argument(
+        "--current-bindings",
+        default=None,
+        help="JSON file of current source bindings for freshness checks",
+    )
+    p_rrd.set_defaults(func=cmd_render_report)
+
+    p_vr = sub.add_parser("validate-report", help="Validate report schema, fingerprints, freshness")
+    p_vr.add_argument("--report-id", required=True)
+    p_vr.add_argument("--workspace", default=None)
+    p_vr.add_argument("--current-bindings", default=None)
+    p_vr.add_argument("--allow-incomplete-diagnostic", action="store_true")
+    p_vr.set_defaults(func=cmd_validate_report)
+
+    p_shr = sub.add_parser("show-report", help="Show a safe report summary (no secret dumps)")
+    p_shr.add_argument("--report-id", required=True)
+    p_shr.add_argument("--workspace", default=None)
+    p_shr.add_argument("--format", default="text", choices=["text", "json"])
+    p_shr.add_argument("--json", action="store_true")
+    p_shr.set_defaults(func=cmd_show_report)
 
     return parser
 

@@ -729,8 +729,7 @@ def stage_doc_consistency(repo_root: Path, policy: CIPolicy) -> CIStageResult:
             continue
         files.append(rel)
         text = path.read_text(encoding="utf-8")
-        if ver and ver not in text and "0.6.0" == ver:
-            # Round 4A expects docs to mention 0.6.0 when bumped
+        if ver and ver not in text:
             soft_fail = True
             notes.append(f"{rel} missing version {ver}")
     if soft_fail:

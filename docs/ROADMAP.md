@@ -52,6 +52,18 @@ Local CI, quality gates, and pull-request validation foundation:
 
 **High-quality reporting system upgrade** — separate explicit approval and plan required before implementation.
 
+## Round 4C (complete) — evidence-first reporting
+
+- Canonical evidence + claim-status model (`4c.1`)
+- Audience/detail renderers (executive, operator, developer, independent_reviewer, auditor)
+- Deterministic relevance engine and template executive summaries (no LLM)
+- Report integrity fingerprints, redaction, legacy adapters
+- CLI: `build-report`, `render-report`, `validate-report`, `show-report`
+- Design: `docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md`
+- Standard: `docs/REPORTING_STANDARD.md`
+- Package **`0.7.0`**
+- Round 4B remote CI remains complete; no live provider; no vuln DB; Equitify disconnected
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs
@@ -66,9 +78,9 @@ Local CI, quality gates, and pull-request validation foundation:
 
 Completed rounds above remain authoritative for **what is implemented**. Blueprint Phases A–I in [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) define the longer-term vision beyond Round 4B. Each future implementation round requires separate approval and planning.
 
-**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4B / package **0.6.0** remains the implemented baseline.
+**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4C / package **0.7.0** is the implemented reporting baseline (memory still deferred).
 
-**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4B / package **0.6.0** remains the implemented baseline.
+**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4C / package **0.7.0** remains the implemented baseline for CI + reporting.
 
 ## Explicitly deferred
 

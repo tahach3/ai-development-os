@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.6.0` · **Round:** 4B
+**As of:** 2026-07-22 · **Package version:** `0.7.0` · **Round:** 4C
 
 ---
 
@@ -18,6 +18,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **bounded orchestration** lane (Round 3C): simulated implementation → targeted tests → independent review → repair with deterministic stalemate detection.
 - A **local CI / PR validation** lane (Round 4A): deterministic quality gates, change-range validation, dependency-policy (not vuln DB), GitHub workflow definition.
 - A **private remote CI validation** lane (Round 4B): first successful GitHub Actions run on private repo `tahach3/ai-development-os` (no secrets, no live providers, no deploy/merge).
+- An **evidence-first reporting** lane (Round 4C): canonical evidence, claim statuses, audience/detail renderers, deterministic relevance, integrity fingerprints (no LLM summaries).
 
 ### It is not
 
@@ -262,7 +263,23 @@ python -m pytest -q
 - Closeout baseline before this documentation commit: local/origin `master` at `09cf1e67d55c85273babe9b595ccc9cd8f1a3dd6`
 - Workflow posture unchanged and verified: `permissions: contents: read` only; **no** repository secrets; **no** live provider / model steps; **no** deploy / auto-merge / auto-push; Equitify disconnected
 - Package version remains **`0.6.0`** (no bump)
-- **Next development round (planned):** high-quality reporting system upgrade (separate approval)
+- **Next development round (completed in Round 4C):** high-quality reporting system upgrade
+
+### Round 4C (done) — evidence-first audience-specific reporting
+
+- Design: `docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md`
+- Standard: `docs/REPORTING_STANDARD.md`
+- Canonical evidence + claim statuses (`verified`/`reported`/`inferred`/`conflicting`/`unavailable`/`not_applicable`)
+- Audiences: executive, operator, developer, independent_reviewer, auditor
+- Detail levels: summary, standard, full, audit
+- Deterministic relevance engine + template executive summaries (no LLM)
+- Report statuses distinct from task/review/CI verdicts
+- Integrity fingerprints, fail-closed redaction, legacy adapters (no historical rewrite)
+- CLI: `build-report`, `render-report`, `validate-report`, `show-report`
+- Storage: `workspace/reports/{canonical,rendered,manifests}/` (gitignored runtime)
+- Schema/policy/renderer versions: `4c.1`
+- Package version **`0.7.0`**
+- Round 4B remote CI remains complete; no live provider; no vuln DB; no dashboard; Equitify disconnected
 
 ### Deferred (explicit approval)
 
@@ -272,8 +289,7 @@ python -m pytest -q
 - Equitify connection (connect phrase only)
 - Broader command profiles beyond pytest
 - General provider-generated patch engines
-- High-quality reporting system upgrade (next planned development round)
-- Automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local/remote CI gates
+- Automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local/remote CI gates + evidence-first reporting
 
 Still explicitly out of scope unless re-approved later:
 
@@ -330,6 +346,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` | Round 3B provider adapter design |
 | `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md` | Round 3C bounded orchestration design |
 | `docs/ROUND_4A_LOCAL_CI_DESIGN.md` | Round 4A local CI / PR validation design (+ Round 4B remote evidence) |
+| `docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md` | Round 4C evidence-first reporting design |
+| `docs/REPORTING_STANDARD.md` | Round 4C reporting standard / CLI contract |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |
 | `docs/ROADMAP.md` | Round sequencing |
@@ -356,7 +374,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `87068fd` | Round 3B live smoke record: blocked_before_execution (zero live calls) |
 | `734b8c8` | Round 3C bounded orchestration + deterministic stalemate detection |
 | `eeebbe7` | Round 4A local CI, PR validation, workflow definition |
-| `a01f672` | Phase A master blueprint docs; **first private remote CI success** (run `29930178622`) |
+| `9f7ec38` | Round 4B closeout / first private CI validation record |
+| *(pending)* | Round 4C evidence-first audience-specific reporting (`0.7.0`) |
 | `382eb8a` | Phase B1 shared memory design (docs only) |
 | `09cf1e6` | Phase B2 shared memory implementation plan (docs only) |
 | *(this commit)* | Round 4B documentation closeout (first private GitHub CI validation recorded) |
