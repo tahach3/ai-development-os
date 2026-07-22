@@ -14,6 +14,7 @@ This OS is **not** zero-click automation.
 - Round 4B **private remote GitHub Actions** for the fixed workflow on `push` / `pull_request` / `workflow_dispatch` (same least-privilege permissions; no secrets; no live providers)
 - Round 4C **evidence-first report build/render/validate** from persisted/synthetic evidence bundles (no LLM; no network required to render)
 - Round 4D1 **provider readiness audit** (`provider-readiness`) — discovery/version/help/auth-status only; never live prompts
+- Round 4D1.1 **ambiguity resolution** — wrapper identity / logical installations / optional host-local pins; never live prompts; never silent selection of distinct trusted binaries
 
 ## What always requires a human
 
@@ -29,6 +30,7 @@ This OS is **not** zero-click automation.
 - Approving safety-critical CI/policy/workflow changes flagged by `validate-change`
 - Interpreting incomplete / conflicting / blocked / stale reports and deciding next actions
 - Interpreting readiness blockers (auth unknown, ambiguous installs, noninteractive gaps) before Round 4D2
+- Approving a specific provider executable candidate when distinct trusted installations remain (Round 4D1.1)
 - Broadening GitHub Actions permissions, adding repository secrets, live provider CI steps, deploy, or auto-merge (Round 4B validated remote CI only under `contents: read`)
 
 ## Adapter contracts

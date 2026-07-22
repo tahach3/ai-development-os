@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.8.0` · **Round:** 4D1
+**As of:** 2026-07-22 · **Package version:** `0.8.1` · **Round:** 4D1.1
 
 ---
 
@@ -297,6 +297,18 @@ python -m pytest -q
 - Live mode remains disabled; Round 4D2 requires separate authorization
 - Equitify disconnected; no credential-file inspection; simulation ≠ live
 
+### Round 4D1.1 (done) — trusted provider CLI ambiguity resolution
+
+- Design: `docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md`
+- Executable identity, wrapper/shim inspection, logical-installation normalization
+- Automatic collapse only with rule IDs (`AC-*`); no PATH-only or version-text equivalence
+- Operator decision records + approval phrases when distinct trusted installs remain
+- Host-local pins under `workspace/provider_pins/` (gitignored); fingerprint required; never enable live
+- CLI extensions: `--show-candidates`, `--explain-ambiguity`, `--show-logical-installations`, `--generate-selection-record`, `--validate-pin`
+- Ambiguity/pin/selection schemas **`4d1.1.1`**; package **`0.8.1`**
+- Live mode remains disabled; Round 4D2 requires separate authorization
+- Equitify disconnected; wrapper contents never executed; no credential inspection
+
 ### Deferred (explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs (tags remain residual supply-chain risk)
@@ -365,7 +377,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md` | Round 4C evidence-first reporting design |
 | `docs/REPORTING_STANDARD.md` | Round 4C reporting standard / CLI contract |
 | `docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md` | Round 4D1 provider readiness design |
-| `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 readiness standard / CLI contract |
+| `docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md` | Round 4D1.1 CLI ambiguity resolution design |
+| `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 / 4D1.1 readiness standard / CLI contract |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |
 | `docs/ROADMAP.md` | Round sequencing |

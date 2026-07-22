@@ -50,9 +50,11 @@ class DiscoveryResult:
     selected_rule: str = "none"
     note: str = ""
     duplicate_count: int = 0
+    ambiguity: dict[str, object] | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
+            "ambiguity": self.ambiguity,
             "candidates": [c.to_dict() for c in self.candidates],
             "duplicate_count": self.duplicate_count,
             "note": self.note,
@@ -169,6 +171,28 @@ def _which_candidates(names: Sequence[str]) -> list[tuple[str, str]]:
         if hit:
             found.append((hit, name))
     return found
+
+
+def _path_scan_candidates(names: Sequence[str], path_env: str | None = None) -> list[tuple[str, str]]:
+    """Scan PATH directories for allowlisted basenames without printing PATH."""
+    raw = path_env if path_env is not None else os.environ.get("PATH", "")
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for entry in raw.split(os.pathsep):
+        if not entry:
+            continue
+        base = Path(entry)
+        for name in sorted(set(names)):
+            candidate = base / name
+            try:
+                if candidate.is_file() or candidate.is_symlink():
+                    key = str(candidate.resolve())
+                    if key not in seen:
+                        seen.add(key)
+                        results.append((key, name))
+            except OSError:
+                continue
+    return results
 
 
 def _where_exe_candidates(names: Sequence[str], timeout: float = PROBE_TIMEOUT_DEFAULT) -> list[tuple[str, str]]:
@@ -293,6 +317,13 @@ def discover_executable_candidates(
                 continue
             _add_candidate(bucket, path=hit, basename=name, method="python_which")
 
+        for hit, name in _path_scan_candidates(sorted(allowed), path_env=path_env):
+            try:
+                assert_provider_executable_allowed(provider_id, hit)
+            except PolicyError:
+                continue
+            _add_candidate(bucket, path=hit, basename=Path(hit).name, method="path_scan")
+
         if enable_where:
             for hit, name in _where_exe_candidates(sorted(allowed)):
                 try:
@@ -345,8 +376,6 @@ def discover_executable_candidates(
             selected_rule="none",
         )
 
-    # Distinct fingerprints among trusted candidates.
-    fingerprints = {c.fingerprint for c in trusted if c.fingerprint}
     distinct_paths = {c.path for c in trusted}
 
     if configured_path:
@@ -367,20 +396,71 @@ def discover_executable_candidates(
                 note="configured path selected",
             )
 
-    if len(distinct_paths) > 1:
-        # Same content fingerprint across paths is still ambiguous for provenance.
-        if len(fingerprints) > 1 or len(fingerprints) == 0 or len(distinct_paths) > 1:
-            return DiscoveryResult(
-                provider_id=provider_id,
-                status=DiscoveryStatus.AMBIGUOUS_INSTALLATION,
-                candidates=candidates,
-                selected=None,
-                selected_rule="none",
-                duplicate_count=len(distinct_paths),
-                note="multiple distinct executable candidates; no silent selection",
-            )
+    # Round 4D1.1: resolve aliases/wrappers before declaring ambiguity.
+    from .provider_readiness_ambiguity import resolve_ambiguity
 
-    # Single trusted path (possibly rediscovered by multiple methods).
+    path_order = [c.path for c in trusted]
+    resolution = resolve_ambiguity(provider_id, candidates, path_order=path_order)
+    ambiguity_public = resolution.to_public_dict()
+
+    if len(distinct_paths) == 1:
+        selected = trusted[0]
+        return DiscoveryResult(
+            provider_id=provider_id,
+            status=DiscoveryStatus.INSTALLED,
+            candidates=candidates,
+            selected=selected,
+            selected_rule="single_candidate",
+            duplicate_count=1,
+            note="single trusted candidate",
+            ambiguity=ambiguity_public,
+        )
+
+    if resolution.resolved and resolution.selected_path:
+        selected_matches = [
+            c for c in trusted if str(Path(c.path).resolve()) == str(Path(resolution.selected_path).resolve())
+            or c.path == resolution.selected_path
+        ]
+        if not selected_matches:
+            # Selected path may be canonical target not in trusted list form — rebuild.
+            selected = ExecutableCandidate(
+                path=resolution.selected_path,
+                basename=Path(resolution.selected_path).name,
+                resolution_method=resolution.collapse_rule_id or "ambiguity_resolved",
+                fingerprint=resolution.selected_fingerprint,
+                trusted=True,
+                trust_notes="ok",
+                sanitized_location=sanitize_executable_location(resolution.selected_path),
+            )
+        else:
+            selected = selected_matches[0]
+            if resolution.selected_fingerprint:
+                selected.fingerprint = resolution.selected_fingerprint
+        return DiscoveryResult(
+            provider_id=provider_id,
+            status=DiscoveryStatus.INSTALLED,
+            candidates=candidates,
+            selected=selected,
+            selected_rule=resolution.collapse_rule_id or "ambiguity_resolved",
+            duplicate_count=len(distinct_paths),
+            note=resolution.note or "ambiguity_resolved",
+            ambiguity=ambiguity_public,
+        )
+
+    if resolution.requires_operator_selection or len(distinct_paths) > 1:
+        return DiscoveryResult(
+            provider_id=provider_id,
+            status=DiscoveryStatus.AMBIGUOUS_INSTALLATION,
+            candidates=candidates,
+            selected=None,
+            selected_rule="none",
+            duplicate_count=len(distinct_paths),
+            note=resolution.note
+            or "multiple distinct executable candidates; no silent selection",
+            ambiguity=ambiguity_public,
+        )
+
+    # Fallback single trusted path.
     selected = trusted[0]
     return DiscoveryResult(
         provider_id=provider_id,
@@ -390,4 +470,5 @@ def discover_executable_candidates(
         selected_rule="single_candidate",
         duplicate_count=1,
         note="single trusted candidate",
+        ambiguity=ambiguity_public,
     )

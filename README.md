@@ -1,10 +1,10 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, and Round 4D1 **safe live-provider readiness auditing** (discovery/version/help/auth-status only — **no live prompts**).
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1 **safe live-provider readiness auditing**, and Round 4D1.1 **trusted CLI ambiguity resolution** (discovery/version/help/auth-status / wrapper identity only — **no live prompts**).
 
-## Round 4D1 status
+## Round 4D1.1 status
 
-Round 4D1 adds deterministic provider eligibility auditing: multi-candidate executable discovery, allowlisted probes, auth/noninteractive/role matrices, readiness verdicts, staleness checks, and CLI `provider-readiness`. Records live under `workspace/provider_readiness/` (gitignored).
+Round 4D1.1 resolves ambiguous provider CLI installations via deterministic identity, wrapper/shim inspection, logical-installation collapse (rule IDs only), host-local executable pinning (fingerprint required), and operator decision records when distinct trusted binaries remain. **PATH precedence alone is not trust. Matching versions do not prove equivalence. Pins do not enable live mode.**
 
 **Honest status:**
 
@@ -14,11 +14,12 @@ Round 4D1 adds deterministic provider eligibility auditing: multi-candidate exec
 | Private remote CI executed successfully (Round 4B) | Yes — on `tahach3/ai-development-os` |
 | Evidence-first reporting (Round 4C) | Yes — deterministic templates; no LLM summaries |
 | Provider readiness audit (Round 4D1) | Yes — **no live model invocations** |
+| CLI ambiguity resolution (Round 4D1.1) | Yes — collapse or operator selection; **no silent pick** |
 | Workflow permissions | `contents: read` only |
 | Repository secrets / live provider / auto review / merge / deploy | **No** |
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
-| Package version | **0.8.0** |
+| Package version | **0.8.1** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization).
 
@@ -45,8 +46,10 @@ ai-dev-os render-report --report-id RID
 ai-dev-os validate-report --report-id RID
 ai-dev-os show-report --report-id RID --json
 
-# Round 4D1 provider readiness (no live prompts):
+# Round 4D1 / 4D1.1 provider readiness (no live prompts):
 ai-dev-os provider-readiness --project-id calculator-demo --json --show-combinations
+ai-dev-os provider-readiness --project-id calculator-demo --show-candidates --explain-ambiguity --show-logical-installations
+ai-dev-os provider-readiness --validate-pin cursor
 ```
 
 ## Prior rounds (complete)
@@ -58,13 +61,15 @@ ai-dev-os provider-readiness --project-id calculator-demo --json --show-combinat
 - Round 4B: first private remote CI validation (`tahach3/ai-development-os`)
 - Round 4C: evidence-first audience-specific reporting (`4c.1`)
 - Round 4D1: safe provider readiness auditing (`4d1.1`) — live smoke **not** authorized
+- Round 4D1.1: trusted CLI ambiguity resolution (`4d1.1.1`) — pins/host-local only; live still **not** authorized
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4D1 designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.0**.
+See `docs/` for architecture, Round 3A–4D1.1 designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.1**.
 
-- [`docs/PROVIDER_READINESS_STANDARD.md`](docs/PROVIDER_READINESS_STANDARD.md) — Round 4D1 readiness contract
+- [`docs/PROVIDER_READINESS_STANDARD.md`](docs/PROVIDER_READINESS_STANDARD.md) — Round 4D1 / 4D1.1 readiness contract
 - [`docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md`](docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md) — Round 4D1 design
+- [`docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md`](docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md) — Round 4D1.1 design
 - [`docs/REPORTING_STANDARD.md`](docs/REPORTING_STANDARD.md) — Round 4C reporting contract
 - [`docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md`](docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md) — Round 4C design
 - [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) — master architectural direction (not all implemented)

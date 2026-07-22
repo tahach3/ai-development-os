@@ -188,9 +188,47 @@ class ProviderReadinessEngine:
             return record
 
         entry = config.get_entry(provider_id)
+        configured_path = entry.executable_path
+
+        # Host-local pin overlay (ignored runtime; never enables live).
+        pin_meta: dict[str, Any] = {}
+        try:
+            # Unused import cleanup in pin block
+            from .provider_readiness_pins import ProviderPinStore, validate_pin
+
+            pin_store = ProviderPinStore(self.repo_root / "workspace" / "provider_pins")
+            pin = pin_store.load(provider_id)
+            if pin is not None:
+                pin_result = validate_pin(
+                    pin,
+                    adapter_version=adapter_version,
+                )
+                pin_meta = pin_result.to_dict()
+                if pin_result.valid:
+                    configured_path = pin.canonical_executable_path
+                    events.append(
+                        AuditEvent(
+                            event_type=AuditEventType.PIN_VALIDATED.value,
+                            message="Host-local executable pin validated",
+                            provider_id=provider_id,
+                            details={"candidate_id": pin.candidate_id},
+                        )
+                    )
+                else:
+                    events.append(
+                        AuditEvent(
+                            event_type=AuditEventType.PIN_REJECTED.value,
+                            message="Host-local executable pin rejected",
+                            provider_id=provider_id,
+                            details={"reasons": pin_result.reasons},
+                        )
+                    )
+        except Exception:
+            pin_meta = {}
+
         discovery = discover_executable_candidates(
             provider_id,
-            configured_path=entry.executable_path,
+            configured_path=configured_path,
             path_env=path_env,
             enable_where=enable_where if path_env is None else False,
             enable_get_command=enable_get_command if path_env is None else False,
@@ -203,6 +241,52 @@ class ProviderReadinessEngine:
         record.candidate_executables = [c.to_dict() for c in discovery.candidates]
         record.duplicate_executable_count = discovery.duplicate_count
         record.selected_executable_rule = discovery.selected_rule
+        if discovery.ambiguity:
+            record.metadata["ambiguity_resolution"] = discovery.ambiguity
+            for ev in (discovery.ambiguity.get("audit_events") or []):
+                if isinstance(ev, dict):
+                    events.append(
+                        AuditEvent(
+                            event_type=str(ev.get("event_type") or "candidate_discovered"),
+                            message=str(ev.get("message") or ""),
+                            provider_id=provider_id,
+                            details=dict(ev.get("details") or {}),
+                        )
+                    )
+            if discovery.ambiguity.get("requires_operator_selection"):
+                from .provider_readiness_selection import build_operator_decision
+
+                # Rebuild typed resolution for decision record from candidates.
+                from .provider_readiness_ambiguity import resolve_ambiguity
+
+                resolution = resolve_ambiguity(provider_id, discovery.candidates)
+                if resolution.requires_operator_selection:
+                    decision = build_operator_decision(resolution)
+                    record.metadata["operator_decision"] = decision.to_dict()
+                    events.append(
+                        AuditEvent(
+                            event_type=AuditEventType.SELECTION_REQUIRED.value,
+                            message="Distinct trusted installations require operator selection",
+                            provider_id=provider_id,
+                            details={
+                                "decision_id": decision.decision_id,
+                                "recommended_candidate_id": decision.recommended_candidate_id,
+                            },
+                        )
+                    )
+                    events.append(
+                        AuditEvent(
+                            event_type=AuditEventType.RECOMMENDATION_PRODUCED.value,
+                            message="Recommendation produced without automatic selection",
+                            provider_id=provider_id,
+                            details={
+                                "recommended_candidate_id": decision.recommended_candidate_id,
+                                "reasons": decision.recommendation_reasons,
+                            },
+                        )
+                    )
+        if pin_meta:
+            record.metadata["executable_pin"] = pin_meta
         if discovery.selected:
             events.append(
                 AuditEvent(

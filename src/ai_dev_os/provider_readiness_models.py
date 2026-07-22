@@ -111,6 +111,12 @@ class ReadinessFailureClass(str, Enum):
     AUTH_UNVERIFIED = "auth_unverified"
     STALE_RECORD = "stale_record"
     EQUITIFY_REJECTED = "equitify_rejected"
+    AMBIGUITY_UNRESOLVED = "ambiguity_unresolved"
+    OPERATOR_SELECTION_REQUIRED = "operator_selection_required"
+    EXECUTABLE_PIN_INVALID = "executable_pin_invalid"
+    EXECUTABLE_PIN_STALE = "executable_pin_stale"
+    WRAPPER_UNSUPPORTED = "wrapper_unsupported"
+    LOGICAL_INSTALLATION_INVALID = "logical_installation_invalid"
 
 
 class AuditEventType(str, Enum):
@@ -122,6 +128,19 @@ class AuditEventType(str, Enum):
     PROBE_SKIPPED_BY_SAFETY_POLICY = "probe_skipped_by_safety_policy"
     READINESS_DECISION_PRODUCED = "readiness_decision_produced"
     LIVE_INVOCATION_BLOCKED = "live_invocation_blocked"
+    CANDIDATE_DISCOVERED = "candidate_discovered"
+    WRAPPER_INSPECTED = "wrapper_inspected"
+    TARGET_RESOLVED = "target_resolved"
+    CANDIDATE_FINGERPRINTED = "candidate_fingerprinted"
+    CANDIDATE_CLASSIFIED = "candidate_classified"
+    LOGICAL_INSTALLATION_CREATED = "logical_installation_created"
+    CANDIDATES_COLLAPSED = "candidates_collapsed"
+    AMBIGUITY_RETAINED = "ambiguity_retained"
+    RECOMMENDATION_PRODUCED = "recommendation_produced"
+    SELECTION_REQUIRED = "selection_required"
+    PIN_VALIDATED = "pin_validated"
+    PIN_REJECTED = "pin_rejected"
+    READINESS_RERUN = "readiness_rerun"
 
 
 READINESS_ROLES = (

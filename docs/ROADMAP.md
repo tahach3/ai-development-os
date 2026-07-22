@@ -73,7 +73,18 @@ Local CI, quality gates, and pull-request validation foundation:
 - CLI: `provider-readiness`
 - Design: `docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md`
 - Standard: `docs/PROVIDER_READINESS_STANDARD.md`
-- Schema/policy **`4d1.1`**; package **`0.8.0`**
+- Schema/policy **`4d1.1`**; package **`0.8.0`** (superseded by 4D1.1 / `0.8.1`)
+- Live mode remains disabled; Round 4D2 requires separate authorization
+
+## Round 4D1.1 (complete) — trusted CLI ambiguity resolution
+
+- Executable identity, wrapper/shim inspection (contents as data; never executed)
+- Logical-installation normalization with automatic-collapse rule IDs only
+- Operator decision records when distinct trusted binaries remain
+- Host-local executable pins (`workspace/provider_pins/`) — fingerprint required; never enable live
+- CLI: `--show-candidates`, `--explain-ambiguity`, `--show-logical-installations`, `--generate-selection-record`, `--validate-pin`
+- Design: `docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md`
+- Ambiguity/pin/selection schemas **`4d1.1.1`**; package **`0.8.1`**
 - Live mode remains disabled; Round 4D2 requires separate authorization
 
 ## Later (only with explicit approval)
@@ -90,9 +101,9 @@ Local CI, quality gates, and pull-request validation foundation:
 
 Completed rounds above remain authoritative for **what is implemented**. Blueprint Phases A–I in [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) define the longer-term vision beyond Round 4B. Each future implementation round requires separate approval and planning.
 
-**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4D1 / package **0.8.0** is the implemented baseline (memory still deferred).
+**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4D1.1 / package **0.8.1** is the implemented baseline (memory still deferred).
 
-**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4D1 / package **0.8.0** remains the implemented baseline for CI + reporting + readiness.
+**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4D1.1 / package **0.8.1** remains the implemented baseline for CI + reporting + readiness.
 
 ## Explicitly deferred
 

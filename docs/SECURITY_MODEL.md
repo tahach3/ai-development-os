@@ -67,6 +67,14 @@ Round 4D1 provider readiness adds:
 - Live mode cannot be enabled by readiness tooling (`live_provider_invocations: 0`)
 - Equitify identifiers and paths rejected during audits
 
+Round 4D1.1 ambiguity resolution adds:
+
+- Wrapper/shim contents treated as untrusted data (never executed as commands)
+- Automatic collapse only under explicit rule IDs; PATH order is informational only
+- Host-local pins require path + fingerprint; path-only pins rejected; pins never enable live mode
+- Operator decision records when distinct trusted binaries remain
+- Stale pins / fingerprint mismatches fail closed
+
 ## Validation
 
 - Explicit required fields and enums
@@ -77,8 +85,8 @@ Round 4D1 provider readiness adds:
 - Orchestration schema `3c.1`; unsupported versions fail closed
 - CI schema/policy `4a.1`; unsupported versions fail closed
 - Reporting schema/policy `4c.1`; fingerprint + freshness validation fail closed
-- Provider readiness schema/policy `4d1.1`; staleness + zero live-invocation validation fail closed
+- Provider readiness schema/policy `4d1.1` + ambiguity/pin `4d1.1.1`; staleness + zero live-invocation validation fail closed
 
 ## Trust boundary
 
-Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). Round 4D1 readiness audits inspect local CLIs harmlessly and never send model prompts. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.
+Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). Round 4D1 / 4D1.1 readiness audits inspect local CLIs harmlessly and never send model prompts. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.

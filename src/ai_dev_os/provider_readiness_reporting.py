@@ -137,11 +137,28 @@ def render_executive_markdown(bundle: ReadinessAuditBundle) -> str:
         "eligible_for_bounded_live_smoke",
         "conditionally_eligible_for_bounded_live_smoke",
     )
+    ambiguity_notes = []
+    selection_needed = False
+    recommended_cand = None
+    for r in bundle.provider_records:
+        amb = (r.metadata or {}).get("ambiguity_resolution") or {}
+        if amb.get("resolved"):
+            ambiguity_notes.append(
+                f"{r.provider_id}: resolved via {amb.get('collapse_rule_id') or 'rule'}"
+            )
+        if amb.get("requires_operator_selection"):
+            selection_needed = True
+            decision = (r.metadata or {}).get("operator_decision") or {}
+            recommended_cand = decision.get("recommended_candidate_id")
+            ambiguity_notes.append(f"{r.provider_id}: operator_selection_required")
     return "\n".join(
         [
             "# Provider Readiness — Executive Summary",
             "",
             f"- Bounded live smoke ready: {'conditional/yes' if smoke_ready else 'no'} ({bundle.aggregate_verdict})",
+            f"- Ambiguity resolved: {'yes' if ambiguity_notes and not selection_needed else ('partial/no' if ambiguity_notes else 'n/a')}",
+            f"- Human executable selection required: {'yes' if selection_needed else 'no'}",
+            f"- Recommended candidate: {recommended_cand or 'n/a'}",
             f"- Recommended provider combination: {combo_line}",
             f"- Highest blocker: {top_blocker}",
             "- Required human action: separate Round 4D2 authorization before any live prompt",
@@ -168,8 +185,35 @@ def render_operator_markdown(bundle: ReadinessAuditBundle) -> str:
         )
         for b in r.blockers:
             lines.append(f"  - blocker: {b}")
+        amb = (r.metadata or {}).get("ambiguity_resolution") or {}
+        if amb.get("candidates"):
+            lines.append("  - candidate matrix:")
+            for c in amb["candidates"]:
+                lines.append(
+                    f"    - {c.get('candidate_id')}: {c.get('sanitized_location')} "
+                    f"fp={c.get('fingerprint_prefix')} trust={c.get('trust_status')} "
+                    f"class={c.get('classification')}"
+                )
+        decision = (r.metadata or {}).get("operator_decision")
+        if decision:
+            lines.append(f"  - approval phrase: `{decision.get('approval_phrase')}`")
+            lines.append(
+                f"  - recommended candidate: {decision.get('recommended_candidate_id')}"
+            )
+        pin = (r.metadata or {}).get("executable_pin")
+        if pin:
+            lines.append(f"  - pin status: {pin.get('status')} valid={pin.get('valid')}")
     lines.extend(["", "## Next actions", ""])
-    if bundle.aggregate_verdict == "no_eligible_provider":
+    if any(
+        ((r.metadata or {}).get("ambiguity_resolution") or {}).get(
+            "requires_operator_selection"
+        )
+        for r in bundle.provider_records
+    ):
+        lines.append(
+            "- Approve one candidate with the exact approval phrase, then `--write-pin` (host-local only)."
+        )
+    elif bundle.aggregate_verdict == "no_eligible_provider":
         lines.append(
             "- Install/configure an adapter-supported CLI, or wait for 4D2 auth after eligibility."
         )
@@ -182,6 +226,7 @@ def render_operator_markdown(bundle: ReadinessAuditBundle) -> str:
             "- Review blockers; obtain explicit Round 4D2 authorization before live smoke."
         )
     lines.append("- Do not enable live mode from readiness tooling.")
+    lines.append("- Local executable pins do not enable live mode and do not imply authentication.")
     lines.append("")
     return "\n".join(lines)
 
@@ -196,6 +241,7 @@ def render_developer_markdown(bundle: ReadinessAuditBundle) -> str:
         "",
     ]
     for r in bundle.provider_records:
+        amb = (r.metadata or {}).get("ambiguity_resolution") or {}
         lines.extend(
             [
                 f"## {r.provider_id}",
@@ -203,6 +249,9 @@ def render_developer_markdown(bundle: ReadinessAuditBundle) -> str:
                 f"- executable: {r.executable_name} ({r.sanitized_executable_location})",
                 f"- fingerprint: {r.executable_fingerprint}",
                 f"- CLI version: {r.cli_version} ({r.compatibility_status})",
+                f"- discovery rule: {r.selected_executable_rule}",
+                f"- ambiguity resolved: {amb.get('resolved')} rule={amb.get('collapse_rule_id')}",
+                f"- logical installations: {len(amb.get('logical_installations') or [])}",
                 f"- roles: implementer={r.implementer_eligibility}, reviewer={r.reviewer_eligibility}",
                 f"- independence: {r.reviewer_independence_status}",
                 f"- worktree: {r.isolated_worktree_compatibility}",
@@ -214,6 +263,16 @@ def render_developer_markdown(bundle: ReadinessAuditBundle) -> str:
                 "",
             ]
         )
+        if amb.get("logical_installations"):
+            lines.append("Logical installations:")
+            for li in amb["logical_installations"]:
+                lines.append(
+                    f"- {li.get('logical_installation_id')}: "
+                    f"status={li.get('ambiguity_status')} "
+                    f"rule={li.get('collapse_rule_id')} "
+                    f"members={li.get('candidate_ids')}"
+                )
+            lines.append("")
         lines.append("Role matrix:")
         for m in r.role_matrix:
             lines.append(
@@ -230,6 +289,10 @@ def render_developer_markdown(bundle: ReadinessAuditBundle) -> str:
             f"[{c.independence_status}]{marker} — {c.notes}"
         )
     lines.append("")
+    lines.append(
+        "Notes: PATH precedence alone is not trust; matching versions do not prove executable equivalence."
+    )
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -242,20 +305,33 @@ def render_auditor_markdown(bundle: ReadinessAuditBundle) -> str:
         f"- readiness_policy_version: `{bundle.readiness_policy_version}`",
         f"- live_provider_invocations: `{bundle.live_provider_invocations}`",
         "- proof: readiness engine never sends provider prompts; probes allowlisted only",
+        "- proof: wrapper contents treated as data; never executed",
+        "- proof: path-only pins rejected; fingerprint required",
         "",
     ]
     for r in bundle.provider_records:
+        amb = (r.metadata or {}).get("ambiguity_resolution") or {}
         lines.extend(
             [
                 f"## {r.provider_id}",
                 f"- readiness_id: {r.readiness_id}",
                 f"- record_fingerprint: {r.record_fingerprint}",
                 f"- executable_fingerprint: {r.executable_fingerprint}",
+                f"- ambiguity schema: {amb.get('schema_version')}",
+                f"- collapse rule: {amb.get('collapse_rule_id')}",
                 "- redactions: tokens redacted from probe summaries; full PATH not recorded",
                 "",
-                "### Sanitized probes",
+                "### Sanitized candidates",
             ]
         )
+        for c in amb.get("candidates") or []:
+            lines.append(
+                f"- {c.get('candidate_id')}: kind={c.get('file_kind')} "
+                f"fp={c.get('fingerprint_prefix')} class={c.get('classification')} "
+                f"trust={c.get('trust_status')} wrapper={c.get('wrapper_type')}"
+            )
+        lines.append("")
+        lines.append("### Sanitized probes")
         for p in r.probes:
             lines.append(
                 f"- {p.get('kind')}: cmd=`{p.get('command_identity')}` exit={p.get('exit_code')} "
@@ -266,6 +342,9 @@ def render_auditor_markdown(bundle: ReadinessAuditBundle) -> str:
         lines.append("### Audit events")
         for e in r.audit_events:
             lines.append(f"- {e.get('event_type')}: {e.get('message')}")
+        pin = (r.metadata or {}).get("executable_pin")
+        if pin:
+            lines.append(f"- pin integrity: valid={pin.get('valid')} status={pin.get('status')}")
         lines.append("")
     return "\n".join(lines)
 

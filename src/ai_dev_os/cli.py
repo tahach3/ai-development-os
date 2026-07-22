@@ -1124,8 +1124,69 @@ def cmd_provider_readiness(args: argparse.Namespace) -> int:
             print(json.dumps(payload, indent=2, sort_keys=True))
             return 0 if not errors else 1
 
+        if getattr(args, "validate_pin", None):
+            from .provider_readiness_pins import ProviderPinStore, validate_pin
+            from .provider_readiness_profiles import adapter_version_for
+
+            provider_id = args.validate_pin
+            pin = ProviderPinStore().load(provider_id)
+            if pin is None:
+                print(json.dumps({"valid": False, "status": "missing", "provider_id": provider_id}))
+                return 1
+            result = validate_pin(pin, adapter_version=adapter_version_for(provider_id))
+            print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+            return 0 if result.valid else 1
+
+        if getattr(args, "write_pin", None):
+            from .provider_readiness_pins import ProviderPinStore, create_pin
+            from .provider_readiness_profiles import adapter_version_for
+            from .provider_readiness_selection import validate_approval_phrase
+
+            if not args.candidate_id or not args.executable_path or not args.fingerprint:
+                print(
+                    "ERROR: --write-pin requires --candidate-id, --executable-path, and --fingerprint",
+                    file=sys.stderr,
+                )
+                return 1
+            if not args.approval_phrase or not validate_approval_phrase(
+                args.approval_phrase, args.candidate_id
+            ):
+                print("ERROR: approval phrase mismatch", file=sys.stderr)
+                return 1
+            if not args.confirm_live_disabled:
+                print(
+                    "ERROR: --confirm-live-disabled is required to write a pin",
+                    file=sys.stderr,
+                )
+                return 1
+            pin = create_pin(
+                provider_id=args.write_pin,
+                candidate_id=args.candidate_id,
+                canonical_executable_path=args.executable_path,
+                expected_fingerprint=args.fingerprint,
+                adapter_id=args.write_pin,
+                adapter_version=adapter_version_for(args.write_pin),
+                approval_phrase=args.approval_phrase,
+                expected_cli_version=args.expected_cli_version,
+                decision_id=args.decision_id,
+            )
+            path = ProviderPinStore().save(pin)
+            print(
+                json.dumps(
+                    {
+                        "stored": str(path),
+                        "pin": pin.to_public_dict(),
+                        "live_mode_enabled": False,
+                        "live_provider_invocations": 0,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
+
         if not args.project_id:
-            print("ERROR: --project-id is required unless --validate is set", file=sys.stderr)
+            print("ERROR: --project-id is required unless --validate/--validate-pin/--write-pin", file=sys.stderr)
             return 1
 
         providers = [args.provider] if args.provider else None
@@ -1135,6 +1196,33 @@ def cmd_provider_readiness(args: argparse.Namespace) -> int:
             include_help_summary=bool(args.include_help_summary),
             allow_unknown_auth_conditional=bool(args.allow_unknown_auth_conditional),
         )
+
+        if getattr(args, "generate_selection_record", False):
+            from .provider_readiness_selection import OperatorDecisionStore
+
+            decision_store = OperatorDecisionStore()
+            saved = []
+            for rec in bundle.provider_records:
+                decision = (rec.metadata or {}).get("operator_decision")
+                if decision:
+                    from .provider_readiness_selection import OperatorDecisionRecord
+
+                    record = OperatorDecisionRecord.from_dict(decision)
+                    saved.append(str(decision_store.save(record)))
+            if args.json:
+                print(
+                    json.dumps(
+                        {"saved": saved, "live_provider_invocations": 0},
+                        indent=2,
+                        sort_keys=True,
+                    )
+                )
+            else:
+                for p in saved:
+                    print(f"selection_record: {p}")
+            if not saved and not args.json:
+                print("No operator selection records required.")
+
         out_path = store.save_bundle(bundle)
         reports = render_all_audiences(bundle)
 
@@ -1144,14 +1232,41 @@ def cmd_provider_readiness(args: argparse.Namespace) -> int:
                 encoding="utf-8",
             )
 
+        # Ambiguity / candidate views
+        extra: dict = {"live_provider_invocations": 0}
+        if getattr(args, "show_candidates", False) or getattr(args, "explain_ambiguity", False) or getattr(args, "show_logical_installations", False):
+            views = []
+            for rec in bundle.provider_records:
+                amb = (rec.metadata or {}).get("ambiguity_resolution") or {}
+                entry = {"provider_id": rec.provider_id}
+                if getattr(args, "show_candidates", False):
+                    entry["candidates"] = amb.get("candidates") or rec.candidate_executables
+                if getattr(args, "explain_ambiguity", False):
+                    entry["ambiguity"] = {
+                        "resolved": amb.get("resolved"),
+                        "collapse_rule_id": amb.get("collapse_rule_id"),
+                        "requires_operator_selection": amb.get("requires_operator_selection"),
+                        "note": amb.get("note"),
+                        "rejection_reasons": amb.get("rejection_reasons"),
+                        "operator_decision": (rec.metadata or {}).get("operator_decision"),
+                    }
+                if getattr(args, "show_logical_installations", False):
+                    entry["logical_installations"] = amb.get("logical_installations")
+                views.append(entry)
+            extra["ambiguity_views"] = views
+
         if args.json:
             payload = bundle.to_dict()
             payload["stored_path"] = str(out_path)
+            payload.update(extra)
             if args.show_combinations:
                 payload["combinations_only"] = [c.to_dict() for c in bundle.combinations]
             print(json.dumps(payload, indent=2, sort_keys=True))
         else:
             print(human_summary(bundle))
+            if extra.get("ambiguity_views"):
+                print("## Ambiguity / candidates")
+                print(json.dumps(extra["ambiguity_views"], indent=2, sort_keys=True))
             if args.show_combinations:
                 print("## Recommended combinations")
                 for c in bundle.combinations:
@@ -1795,6 +1910,54 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         choices=["executive", "operator", "developer", "auditor"],
         help="Also print a readiness audience report",
+    )
+    p_prdy.add_argument(
+        "--show-candidates",
+        action="store_true",
+        help="Show sanitized executable candidate matrix (Round 4D1.1)",
+    )
+    p_prdy.add_argument(
+        "--explain-ambiguity",
+        action="store_true",
+        help="Explain ambiguity resolution / operator selection (Round 4D1.1)",
+    )
+    p_prdy.add_argument(
+        "--show-logical-installations",
+        action="store_true",
+        help="Show logical installation normalization (Round 4D1.1)",
+    )
+    p_prdy.add_argument(
+        "--generate-selection-record",
+        action="store_true",
+        help="Persist operator decision records when selection is required",
+    )
+    p_prdy.add_argument(
+        "--validate-pin",
+        default=None,
+        metavar="PROVIDER_ID",
+        help="Validate host-local executable pin for provider",
+    )
+    p_prdy.add_argument(
+        "--recheck",
+        action="store_true",
+        help="Alias for a fresh readiness audit (no live prompts)",
+    )
+    p_prdy.add_argument(
+        "--write-pin",
+        default=None,
+        metavar="PROVIDER_ID",
+        help="Write host-local pin (requires approval phrase + fingerprint; never enables live)",
+    )
+    p_prdy.add_argument("--candidate-id", default=None)
+    p_prdy.add_argument("--executable-path", default=None, help="Private local path for pin write only")
+    p_prdy.add_argument("--fingerprint", default=None, help="Expected SHA-256 fingerprint for pin")
+    p_prdy.add_argument("--approval-phrase", default=None)
+    p_prdy.add_argument("--decision-id", default=None)
+    p_prdy.add_argument("--expected-cli-version", default=None)
+    p_prdy.add_argument(
+        "--confirm-live-disabled",
+        action="store_true",
+        help="Required with --write-pin; affirms live mode remains disabled",
     )
     p_prdy.set_defaults(func=cmd_provider_readiness)
 

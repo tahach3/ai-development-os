@@ -1,0 +1,25 @@
+{
+  "schema_version": "4d1.1.1",
+  "description": "Example host-local provider executable pin (DO NOT commit real paths or usernames).",
+  "notes": [
+    "Store real pins only under workspace/provider_pins/ (gitignored).",
+    "Fingerprint is required; path-only pins are rejected.",
+    "Pins never enable live mode and never imply authentication."
+  ],
+  "example_pin": {
+    "pin_id": "pin_example",
+    "schema_version": "4d1.1.1",
+    "provider_id": "cursor",
+    "candidate_id": "cand_example",
+    "canonical_executable_path": "C:/PATH/TO/PROVIDER/CLI/ON/THIS/HOST/ONLY",
+    "expected_fingerprint": "REPLACE_WITH_SHA256_OF_EXECUTABLE",
+    "expected_cli_version": null,
+    "adapter_id": "cursor",
+    "adapter_version": "3b.1",
+    "trust_policy_version": "4d1.1.1",
+    "host_binding_fingerprint": "REPLACE_WITH_HOST_BINDING",
+    "pin_status": "active",
+    "approval_phrase": "Approve provider executable cand_example for local readiness pinning only.",
+    "decision_id": null
+  }
+}
