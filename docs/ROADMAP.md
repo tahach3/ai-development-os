@@ -20,32 +20,42 @@ Safe execution foundation: sessions, worktrees, allowlisted pytest, envelopes, a
 
 Controlled provider CLI adapters (contracts, discovery, simulated provider, gated live shells — live not authorized in validation). Live smoke attempt 2026-07-22: **blocked_before_execution**, zero live calls.
 
-## Round 3C (this release)
+## Round 3C
 
-Bounded orchestration with deterministic stalemate detection:
+Bounded orchestration with deterministic stalemate detection (simulated-only). Package `0.5.0`. **Complete.**
 
-- Explicit orchestration state machine + durable records/events/round evidence (`3c.1`)
-- Binding/staleness fail-closed checks before every step
-- Simulated impl → Round 3A targeted tests → independent simulated review → bounded repair
-- Deterministic progress/stalemate (consecutive identical evidence, no-change repair, A-B-A oscillation, repeated malformed)
-- CLI: create/validate/preview/step/run/resume/show/history/stalemate/cancel
-- Design: `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md`
-- Package `0.5.0`
+## Round 4A (this release)
 
-## Round 3D+ / later (only with explicit approval)
+Local CI, quality gates, and pull-request validation foundation:
 
-- Separately authorized **live** local CLI smoke for one provider (only with proven noninteractive path)
+- Deterministic `ci-check` stage pipeline (`4a.1`)
+- Normalized CI run / stage / PR validation schemas
+- `validate-change` without executing change code
+- Dependency-policy (not vulnerability DB scanning)
+- Secret-pattern + runtime artifact controls
+- Minimal GitHub Actions workflow **definition** (not pushed/executed)
+- Sanitized behavioral CI aggregates; recommendations inactive until human approval
+- Design: `docs/ROUND_4A_LOCAL_CI_DESIGN.md`
+- Package `0.6.0`
+
+## Round 4B+ / later (only with explicit approval)
+
+- Execute/push GitHub workflow on a remote; verify action SHA pins
+- Vulnerability database scanning (OSV/NVD/etc.) when explicitly approved
+- Required status-check enforcement
+- Separately authorized **live** local CLI smoke for one provider
 - Broader command profiles beyond pytest
 - Equitify connection after the exact user command
-- Any automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration
+- Any automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local CI
 
 ## Explicitly deferred
 
 - LangChain / CrewAI / AutoGen
 - Paid API adapters
 - Browser automation
-- Auto-merge / auto-push
+- Auto-merge / auto-push / auto-deploy
 - General provider-generated patch application engines
 - Self-modifying routing / safety rules
 - Copying third-party orchestrator code into this repo
 - LLM-based stalemate judges
+- Claiming vulnerability scanning without a real vuln DB

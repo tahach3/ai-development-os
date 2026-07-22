@@ -1,21 +1,22 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, and Round 3C **bounded implementation → test → review → repair orchestration** with deterministic stalemate detection — validated through the **simulated** provider only (**no live model calls**).
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, and Round 4A **local CI / quality gates / PR validation** (GitHub workflow **defined**, not executed in this round).
 
-## Round 3C scope
+## Round 4A scope
 
-Adds a resumable orchestration engine that coordinates approved task/plan → simulated implementation → targeted tests → independent simulated review → bounded repair → completion, block, cancel, or human escalation. Stalemate detection is **deterministic** (structured evidence), not LLM-based.
+Adds a deterministic local CI pipeline (`ai-dev-os ci-check`), change-range validation (`ai-dev-os validate-change`), dependency-policy checks (not vulnerability DB scanning), secret/artifact gates, normalized CI/PR schemas (`4a.1`), sanitized behavioral CI aggregates, and a minimal private-repo GitHub Actions workflow definition.
 
 **Honest status:**
 
-| Claim | Round 3C |
+| Claim | Round 4A |
 | --- | --- |
-| Bounded orchestration state machine | Yes |
-| Simulated full-loop validation | Yes |
-| Deterministic stalemate / repair limits | Yes |
-| Live multi-agent automation | **No** |
-| Provider text executed as code/commands | **No** |
-| Live provider smoke | Still `blocked_before_execution` (zero live calls) |
+| Local CI quality gates | Yes |
+| PR/change validation without executing change code | Yes |
+| GitHub Actions workflow **file** | Yes (definition only) |
+| Workflow pushed/executed on GitHub | **No** |
+| Vulnerability database queried | **No** |
+| Live provider / auto review / merge / push / deploy | **No** |
+| Equitify connected | **No** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push, arbitrary patch engines, credential inspection.
 
@@ -31,34 +32,18 @@ python -m pip install -e ".[dev]"
 ```bash
 ai-dev-os init
 ai-dev-os register-project --id calculator-demo --name "Calculator Demo" --root demo_projects/calculator-demo
-# … Round 2 plan approval + Round 3A session as needed …
 
-# Round 3C (simulated default):
-ai-dev-os create-orchestration --task-id … --plan-id … --session-id … --scenario direct_success
-ai-dev-os validate-orchestration --orchestration-id …
-ai-dev-os preview-orchestration --orchestration-id …
-ai-dev-os run-orchestration --orchestration-id …
-ai-dev-os show-orchestration --orchestration-id …
-ai-dev-os show-stalemate-evidence --orchestration-id …
+# Round 4A:
+ai-dev-os ci-check
+ai-dev-os validate-change --base HEAD~1
 ```
 
-## Safe execution (Round 3A)
+## Prior rounds (complete)
 
-Isolated sessions / worktrees / allowlisted `python -m pytest` remain available (`create-session`, `run-tests`, …).
-
-## Provider adapters (Round 3B)
-
-- Default config is **fail-closed** (`disabled`).
-- Modes: `disabled` | `discovery_only` | `simulated` | `manual_handoff` | `live_local_cli_allowed`.
-- Live requires every gate in `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` and is **not** exercised in validation.
-
-## Bounded orchestration (Round 3C)
-
-- Config: `config/orchestration.yaml` (schema `3c.1`, simulated-only, fail-closed).
-- Design: `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md`.
-- Worktree mutations in synthetic demos are **harness/fixture-controlled** — provider text is never executed.
-- Loops stop on repair limit, step limit, stalemate → `human_review_required` / `blocked`.
+- Round 3A: sessions / worktrees / allowlisted pytest
+- Round 3B: provider adapters (live gated; smoke `blocked_before_execution`)
+- Round 3C: bounded simulated orchestration + stalemate detection
 
 ## Docs
 
-See `docs/` for architecture, Round 3A/3B/3C designs, security, model roles, zero-click limits, roadmap, and project chronicle.
+See `docs/` for architecture, Round 3A/3B/3C/4A designs, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.6.0**.

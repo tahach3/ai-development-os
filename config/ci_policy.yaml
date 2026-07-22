@@ -1,0 +1,82 @@
+# Round 4A CI policy (schema 4a.1). Fail closed on unsupported versions.
+schema_version: "4a.1"
+policy_version: "4a.1"
+
+requires_python: ">=3.11"
+python_versions:
+  - "3.11"
+
+default_timeout_seconds: 60
+compile_timeout_seconds: 120
+pytest_timeout_seconds: 600
+max_timeout_seconds: 900
+output_limit_bytes: 65536
+
+require_clean_worktree: false
+persist_results: false
+results_dirname: "ci_runs"
+
+# Fixed stage order — do not reorder via untrusted input.
+stages:
+  - repo_identity
+  - python_compile
+  - pytest_suite
+  - git_diff_check
+  - schema_validation
+  - config_parse
+  - project_registry
+  - prohibited_paths
+  - package_version
+  - dependency_policy
+  - secret_scan
+  - runtime_artifacts
+  - doc_consistency
+  - finalize
+
+prohibited_dependency_names:
+  - langchain
+  - langchain-core
+  - langchain-community
+  - crewai
+  - autogen
+  - pyautogen
+  - openai
+  - anthropic
+  - google-generativeai
+
+prohibited_path_substrings:
+  - equitify-machine
+  - equitify_machine
+  - /equitify/
+  - \equitify\
+
+runtime_artifact_globs:
+  - workspace/active/**
+  - workspace/completed/**
+  - workspace/decisions/**
+  - workspace/behavioral_reports/**
+  - workspace/plans/**
+  - workspace/repair_rounds/**
+  - workspace/reports/**
+  - workspace/handoffs/**
+  - workspace/context/**
+  - workspace/sessions/**
+  - workspace/provider_executions/**
+  - workspace/orchestrations/**
+  - workspace/ci_runs/**
+  - .env
+  - .venv/**
+  - venv/**
+
+safety_critical_path_prefixes:
+  - config/
+  - schemas/
+  - .github/workflows/
+  - src/ai_dev_os/safe_policy.py
+  - src/ai_dev_os/approval.py
+  - src/ai_dev_os/lifecycle_gates.py
+  - src/ai_dev_os/provider_policy.py
+  - src/ai_dev_os/git_safety.py
+  - src/ai_dev_os/project_registry.py
+  - src/ai_dev_os/ci_config.py
+  - src/ai_dev_os/ci_engine.py

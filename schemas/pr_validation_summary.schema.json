@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/pr_validation_summary.schema.json",
+  "title": "PRValidationSummary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ci_policy_version",
+    "run_id",
+    "repository_identity",
+    "starting_commit",
+    "trigger_type",
+    "started_at",
+    "finished_at",
+    "duration_seconds",
+    "files_examined",
+    "findings",
+    "final_verdict",
+    "failure_classes",
+    "human_review_required",
+    "blocker",
+    "next_action",
+    "policy_decision",
+    "auto_approve",
+    "auto_merge"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "4a.1" },
+    "ci_policy_version": { "type": "string", "const": "4a.1" },
+    "run_id": { "type": "string" },
+    "repository_identity": { "type": "string" },
+    "starting_commit": { "type": "string" },
+    "compared_base_commit": { "type": ["string", "null"] },
+    "trigger_type": { "type": "string", "const": "validate_change" },
+    "started_at": { "type": "string" },
+    "finished_at": { "type": "string" },
+    "duration_seconds": { "type": "number", "minimum": 0 },
+    "files_examined": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "category",
+          "severity",
+          "summary",
+          "failure_class",
+          "human_review_required",
+          "blocker"
+        ],
+        "properties": {
+          "path": { "type": "string" },
+          "category": { "type": "string" },
+          "severity": { "type": "string" },
+          "summary": { "type": "string" },
+          "failure_class": { "type": "string" },
+          "human_review_required": { "type": "boolean" },
+          "blocker": { "type": "boolean" }
+        }
+      }
+    },
+    "final_verdict": { "type": "string" },
+    "failure_classes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "human_review_required": { "type": "boolean" },
+    "blocker": { "type": "boolean" },
+    "next_action": { "type": "string" },
+    "policy_decision": { "type": "string" },
+    "auto_approve": { "type": "boolean", "const": false },
+    "auto_merge": { "type": "boolean", "const": false }
+  }
+}

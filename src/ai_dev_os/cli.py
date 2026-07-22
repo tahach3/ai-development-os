@@ -105,6 +105,7 @@ def cmd_init(_args: argparse.Namespace) -> int:
         "workspace/executions",
         "workspace/orchestrations",
         "workspace/provider_executions",
+        "workspace/ci_runs",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     registry_path = root / "config" / "projects.yaml"
@@ -562,7 +563,24 @@ def cmd_review_status(args: argparse.Namespace) -> int:
 
 def cmd_behavioral_report(args: argparse.Namespace) -> int:
     tasks = TaskStore().list_tasks(include_completed=True)
-    report = generate_behavioral_report(tasks)
+    ci_run = None
+    if getattr(args, "ci_run_file", None):
+        from .ci_models import CIRun
+
+        raw = json.loads(Path(args.ci_run_file).read_text(encoding="utf-8"))
+        ci_run = CIRun.from_dict(raw)
+    orch_summaries = None
+    if getattr(args, "include_orchestration", False):
+        store = OrchestrationStore()
+        orch_summaries = []
+        for oid in store.list_ids():
+            try:
+                orch_summaries.append(store.load(oid).to_dict())
+            except Exception:  # noqa: BLE001
+                continue
+    report = generate_behavioral_report(
+        tasks, ci_run=ci_run, orchestration_summaries=orch_summaries
+    )
     path = write_behavioral_report(report)
     md = render_behavioral_markdown(report)
     md_path = path.with_suffix(".md")
@@ -1029,10 +1047,48 @@ def cmd_cancel_orchestration(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ci_check(args: argparse.Namespace) -> int:
+    from .ci_engine import CIEngineError, ci_run_to_json, exit_code_for_run, run_ci_check
+    from .ci_config import CIConfigError
+
+    skip = list(args.skip_stages or [])
+    only = list(args.only_stages or []) or None
+    try:
+        run = run_ci_check(
+            skip_stages=skip,
+            only_stages=only,
+            base_commit=args.base,
+            require_clean=bool(args.require_clean) or None,
+            persist=bool(args.persist) or None,
+        )
+    except (CIEngineError, CIConfigError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    print(ci_run_to_json(run), end="")
+    return exit_code_for_run(run)
+
+
+def cmd_validate_change(args: argparse.Namespace) -> int:
+    from .ci_validate_change import (
+        ValidateChangeError,
+        exit_code_for_pr_summary,
+        validate_change,
+    )
+    from .ci_config import CIConfigError
+
+    try:
+        summary = validate_change(base=args.base, head=args.head or "HEAD")
+    except (ValidateChangeError, CIConfigError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
+    return exit_code_for_pr_summary(summary)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai-dev-os",
-        description="AI Development Operating System (Round 3C)",
+        description="AI Development Operating System (Round 4A)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1184,6 +1240,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_beh = sub.add_parser("behavioral-report", help="Generate behavioral metrics report")
     p_beh.add_argument("--json", action="store_true")
+    p_beh.add_argument(
+        "--ci-run-file",
+        default=None,
+        help="Optional sanitized CI run JSON to include aggregates",
+    )
+    p_beh.add_argument(
+        "--include-orchestration",
+        action="store_true",
+        help="Include sanitized orchestration stop/provider aggregates",
+    )
     p_beh.set_defaults(func=cmd_behavioral_report)
 
     p_ps = sub.add_parser("project-status", help="Show project and task status")
@@ -1378,6 +1444,35 @@ def build_parser() -> argparse.ArgumentParser:
     p_cao.add_argument("--orchestration-id", required=True)
     p_cao.add_argument("--reason", default="operator cancel")
     p_cao.set_defaults(func=cmd_cancel_orchestration)
+
+    p_ci = sub.add_parser(
+        "ci-check",
+        help="Run deterministic local CI quality gates (Round 4A)",
+    )
+    p_ci.add_argument(
+        "--skip-stages",
+        action="append",
+        default=[],
+        help="Skip a named stage (repeatable); must be a known STAGE_ORDER name",
+    )
+    p_ci.add_argument(
+        "--only-stages",
+        action="append",
+        default=[],
+        help="Run only these stages (repeatable); others skipped",
+    )
+    p_ci.add_argument("--base", default=None, help="Optional compared base commit (metadata)")
+    p_ci.add_argument("--require-clean", action="store_true")
+    p_ci.add_argument("--persist", action="store_true", help="Write sanitized result under workspace/ci_runs")
+    p_ci.set_defaults(func=cmd_ci_check)
+
+    p_vc = sub.add_parser(
+        "validate-change",
+        help="Validate a proposed commit range/diff without executing change code",
+    )
+    p_vc.add_argument("--base", default=None, help="Base ref (e.g. master); omit for working tree")
+    p_vc.add_argument("--head", default="HEAD")
+    p_vc.set_defaults(func=cmd_validate_change)
 
     return parser
 

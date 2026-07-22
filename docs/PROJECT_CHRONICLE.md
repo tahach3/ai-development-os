@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.5.0` · **Round:** 3C
+**As of:** 2026-07-22 · **Package version:** `0.6.0` · **Round:** 4A
 
 ---
 
@@ -16,6 +16,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **safe local execution** lane: sessions, confined worktrees, env filtering, timeouts, output caps, audit envelopes.
 - A **provider adapter** lane: contracts, safe discovery, fail-closed config, simulated fixtures, CLI shells without live model calls in validation.
 - A **bounded orchestration** lane (Round 3C): simulated implementation → targeted tests → independent review → repair with deterministic stalemate detection.
+- A **local CI / PR validation** lane (Round 4A): deterministic quality gates, change-range validation, dependency-policy (not vuln DB), GitHub workflow definition only.
 
 ### It is not
 
@@ -43,6 +44,7 @@ Human-oriented summary of everything shipped to date in this repository.
 | Scope of work | Only projects in `config/projects.yaml`; unregistered IDs refused. |
 | Provider CLIs | Round 3B: discovery/version and simulated fixtures allowed; **live model execution not authorized** in this round’s validation. |
 | Orchestration | Round 3C: simulated-only loops; bounded repair; stalemate → human review; provider text never executed. |
+| Local CI / PR | Round 4A: fixed stages; no arbitrary commands; no auto-merge; workflow defined but not executed/pushed; no vuln DB. |
 
 Details: `docs/PROJECT_BOUNDARIES.md`, `docs/SECURITY_MODEL.md`, `docs/ZERO_CLICK_LIMITATIONS.md`.
 
@@ -239,13 +241,27 @@ python -m pytest -q
 - Package version `0.5.0`
 - Validated through simulation only; zero live provider calls; Equitify not accessed
 
+### Round 4A (done)
+
+- Design: `docs/ROUND_4A_LOCAL_CI_DESIGN.md`
+- Local CI engine (`ai-dev-os ci-check`) with fixed stages and normalized results (`4a.1`)
+- PR/change validation (`ai-dev-os validate-change`) without executing change code
+- Dependency-policy checks (explicitly **not** vulnerability database scanning)
+- Secret-pattern scan with redaction; runtime artifact exclusion
+- Minimal GitHub Actions workflow definition (`.github/workflows/ci.yml`) — **not pushed or executed** in Round 4A
+- Behavioral report CI aggregates; recommendations proposed/inactive until human approval
+- Package version `0.6.0`
+- Zero live provider calls; Equitify not accessed; no auto-merge/push/deploy
+
 ### Deferred (explicit approval)
 
+- Push/execute GitHub workflow remotely; pin action commit SHAs
+- Vulnerability database scanning
 - Separately authorized **live** local CLI model smoke (retry only with a proven noninteractive installed provider + implemented gated live path)
 - Equitify connection (connect phrase only)
 - Broader command profiles beyond pytest
 - General provider-generated patch engines
-- Automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration
+- Automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local CI
 
 Still explicitly out of scope unless re-approved later:
 
@@ -276,11 +292,12 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 
 | Doc | Topic |
 | --- | --- |
-| `README.md` | Install, Round 3C quick start |
-| `docs/ARCHITECTURE.md` | Layers and data flow |
+| `README.md` | Install, Round 4A quick start |
+| `docs/ARCHITECTURE.md` | Layers and data flow (through Round 4A) |
 | `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md` | Round 3A safe execution design |
 | `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` | Round 3B provider adapter design |
 | `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md` | Round 3C bounded orchestration design |
+| `docs/ROUND_4A_LOCAL_CI_DESIGN.md` | Round 4A local CI / PR validation design |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |
 | `docs/ROADMAP.md` | Round sequencing |
@@ -302,4 +319,5 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `eb6aba3` | Round 3A safe sessions, worktrees, allowlisted pytest, audits |
 | `305c0d7` | Round 3B controlled provider adapters, simulated fixtures, discovery shells |
 | `87068fd` | Round 3B live smoke record: blocked_before_execution (zero live calls) |
-| *(pending)* | Round 3C bounded orchestration + deterministic stalemate detection |
+| `734b8c8` | Round 3C bounded orchestration + deterministic stalemate detection |
+| *(this commit)* | Round 4A local CI, PR validation, workflow definition |

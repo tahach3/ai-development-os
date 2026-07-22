@@ -10,6 +10,7 @@ This OS is **not** zero-click automation.
 - Round 3A allowlisted pytest in isolated sessions
 - Round 3B provider **discovery**, **preview**, and **simulated** fixture execution (when explicitly enabled)
 - Round 3C **bounded** simulated orchestration steps (until a safety boundary)
+- Round 4A **local CI stages** and **static change validation** when an operator runs `ci-check` / `validate-change`
 
 ## What always requires a human
 
@@ -19,9 +20,11 @@ This OS is **not** zero-click automation.
 - Authorizing any future **live** local CLI model smoke test
 - Committing / pushing in target repositories
 - Connecting Equitify (explicit user command only)
-- Applying any behavioral recommendation (no auto rule rewrite)
+- Applying any behavioral recommendation (no auto rule rewrite; Round 4A recommendations remain proposed/inactive)
 - Resolving orchestration **stalemate** / repair-limit / blocked states
 - Creating a new orchestration after cancellation (cancelled cannot silently resume)
+- Approving safety-critical CI/policy/workflow changes flagged by `validate-change`
+- Enabling remote GitHub Actions execution (workflow is defined in Round 4A but **not** pushed or run)
 
 ## Adapter contracts
 
@@ -45,4 +48,4 @@ automation_status: simulated_orchestration
 
 Discovery-only uses `discovery_only`. Live local CLI (`live_local_cli`) is gated and **not authorized** in Round 3B/3C validation.
 
-There is no cloud agent, dashboard trigger, or browser automation.
+There is no cloud agent, dashboard trigger, browser automation, auto-merge, auto-push, or auto-deploy.

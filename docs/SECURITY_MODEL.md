@@ -12,6 +12,9 @@
 - No silent provider CLI installation
 - No live provider model execution without explicit multi-gate authorization (Round 3B/3C validation never takes this path)
 - No unbounded repair loops; stalemate requires human review
+- No automatic merge, push, or deployment
+- No repository secrets in GitHub Actions (Round 4A workflow)
+- No vulnerability-scan claims without querying a real vulnerability database (deferred)
 
 ## Subprocess policy
 
@@ -36,6 +39,16 @@ Round 3C orchestration adds:
 - Deterministic stalemate stop → `human_review_required` / `blocked` (no live escalate)
 - Atomic persistence for orchestration records/events
 
+Round 4A CI / PR validation adds:
+
+- Fixed-stage local CI (`ci-check`) with argv arrays, sanitized env, timeouts, output caps
+- No arbitrary commands from config or PR text
+- Secret-pattern scan with redaction (values never persisted raw)
+- Dependency-policy (declared deps / prohibited categories / URL-Git-editable bans) — **not** vuln DB scanning
+- `validate-change` inspects diffs without executing change code
+- Safety-critical path changes → human review classification (not auto-approve)
+- GitHub workflow: `permissions.contents: read` only; no secrets; no live providers; not executed/pushed in Round 4A
+
 ## Validation
 
 - Explicit required fields and enums
@@ -44,7 +57,8 @@ Round 3C orchestration adds:
 - Provider request binding fingerprints; stale bindings fail closed
 - Malformed provider output cannot become impl/review/repair input
 - Orchestration schema `3c.1`; unsupported versions fail closed
+- CI schema/policy `4a.1`; unsupported versions fail closed
 
 ## Trust boundary
 
-Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. The OS does not pretend external tools were invoked for live model work unless a separately authorized live smoke is approved later.
+Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.

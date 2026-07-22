@@ -1,0 +1,48 @@
+# Round 4A — Local CI parity workflow (definition only; not executed/pushed in Round 4A).
+#
+# Supply-chain note: actions use version tags (not immutable commit SHAs).
+# Residual risk: a tag could move. Prefer SHA pins in a later round when hashes are verified.
+#
+# Permissions are least-privilege (contents: read only). No repository secrets.
+# No provider credentials. No live model calls. No deploy. No automatic commits/merge.
+# No artifact upload in Round 4A (would require broader token permissions).
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package (declared deps only)
+        run: python -m pip install -e ".[dev]"
+
+      - name: Pytest suite
+        run: python -m pytest -q
+
+      - name: Local CI check
+        run: python -m ai_dev_os.cli ci-check --skip-stages pytest_suite
+
+      - name: Git diff check
+        run: git diff --check

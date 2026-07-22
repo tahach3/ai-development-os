@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/ci_stage_result.schema.json",
+  "title": "CIStageResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ci_policy_version",
+    "stage_name",
+    "command_identity",
+    "started_at",
+    "finished_at",
+    "duration_seconds",
+    "exit_status",
+    "timeout_status",
+    "validation_status",
+    "failure_class",
+    "sanitized_output_summary",
+    "truncation_status",
+    "files_examined",
+    "policy_decision",
+    "blocker",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "4a.1" },
+    "ci_policy_version": { "type": "string", "const": "4a.1" },
+    "stage_name": { "type": "string" },
+    "command_identity": { "type": "string" },
+    "started_at": { "type": "string" },
+    "finished_at": { "type": "string" },
+    "duration_seconds": { "type": "number", "minimum": 0 },
+    "exit_status": { "type": ["integer", "null"] },
+    "timeout_status": { "type": "boolean" },
+    "validation_status": { "type": "string" },
+    "failure_class": { "type": "string" },
+    "sanitized_output_summary": { "type": "string" },
+    "truncation_status": { "type": "boolean" },
+    "files_examined": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "policy_decision": { "type": "string" },
+    "blocker": { "type": "boolean" },
+    "next_action": { "type": "string" },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    }
+  }
+}

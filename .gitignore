@@ -50,6 +50,8 @@ workspace/handoffs/*
 !workspace/handoffs/.gitkeep
 workspace/context/*
 !workspace/context/.gitkeep
+workspace/ci_runs/*
+!workspace/ci_runs/.gitkeep
 
 # Local project registry (example stays tracked)
 config/projects.yaml

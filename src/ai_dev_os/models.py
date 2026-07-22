@@ -599,6 +599,28 @@ class RepairRound:
 
 
 @dataclass
+class BehavioralRecommendation:
+    """Versioned, inactive-until-approved recommendation (never auto-applied)."""
+
+    id: str
+    text: str
+    version: str = "4a.1"
+    status: str = "proposed"
+    active: bool = False
+    requires_human_approval: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "text": self.text,
+            "version": self.version,
+            "status": "proposed",
+            "active": False,
+            "requires_human_approval": True,
+        }
+
+
+@dataclass
 class BehavioralReport:
     generated_at: str
     task_count: int
@@ -608,6 +630,10 @@ class BehavioralReport:
     risk_counts: dict[str, int] = field(default_factory=dict)
     avg_complexity_band: str | None = None
     auto_rewrite_rules: bool = False
+    # Round 4A sanitized CI / orch aggregates
+    schema_version: str = "4a.1"
+    ci_aggregates: dict[str, Any] = field(default_factory=dict)
+    recommendation_records: list[BehavioralRecommendation] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -619,4 +645,7 @@ class BehavioralReport:
             "avg_complexity_band": self.avg_complexity_band,
             "recommendations": list(self.recommendations),
             "auto_rewrite_rules": False,
+            "schema_version": self.schema_version,
+            "ci_aggregates": dict(self.ci_aggregates),
+            "recommendation_records": [r.to_dict() for r in self.recommendation_records],
         }

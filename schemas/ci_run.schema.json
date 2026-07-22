@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/ci_run.schema.json",
+  "title": "CIRun",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ci_policy_version",
+    "run_id",
+    "repository_identity",
+    "starting_commit",
+    "trigger_type",
+    "state",
+    "started_at",
+    "finished_at",
+    "duration_seconds",
+    "stages",
+    "final_verdict",
+    "failure_classes",
+    "human_review_required",
+    "blocker",
+    "next_action",
+    "policy_decision"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "4a.1" },
+    "ci_policy_version": { "type": "string", "const": "4a.1" },
+    "run_id": { "type": "string" },
+    "repository_identity": { "type": "string" },
+    "starting_commit": { "type": "string" },
+    "compared_base_commit": { "type": ["string", "null"] },
+    "trigger_type": { "type": "string" },
+    "state": { "type": "string" },
+    "started_at": { "type": "string" },
+    "finished_at": { "type": "string" },
+    "duration_seconds": { "type": "number", "minimum": 0 },
+    "stages": {
+      "type": "array",
+      "items": { "$ref": "ci_stage_result.schema.json" }
+    },
+    "final_verdict": { "type": "string" },
+    "failure_classes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "human_review_required": { "type": "boolean" },
+    "blocker": { "type": "boolean" },
+    "next_action": { "type": "string" },
+    "policy_decision": { "type": "string" },
+    "tests_passed": { "type": ["integer", "null"] },
+    "tests_failed": { "type": ["integer", "null"] },
+    "tests_skipped": { "type": ["integer", "null"] },
+    "sanitized_notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    }
+  }
+}

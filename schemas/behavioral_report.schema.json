@@ -36,6 +36,34 @@
       "type": "boolean",
       "const": false,
       "description": "Must remain false; recommendations only."
+    },
+    "schema_version": { "type": "string" },
+    "ci_aggregates": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "recommendation_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text",
+          "version",
+          "status",
+          "active",
+          "requires_human_approval"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "text": { "type": "string" },
+          "version": { "type": "string" },
+          "status": { "type": "string", "const": "proposed" },
+          "active": { "type": "boolean", "const": false },
+          "requires_human_approval": { "type": "boolean", "const": true }
+        }
+      }
     }
   }
 }
