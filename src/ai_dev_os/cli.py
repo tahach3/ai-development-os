@@ -100,6 +100,7 @@ def cmd_init(_args: argparse.Namespace) -> int:
         "workspace/reports/canonical",
         "workspace/reports/rendered",
         "workspace/reports/manifests",
+        "workspace/provider_readiness",
         "workspace/handoffs",
         "workspace/context",
         "workspace/plans",
@@ -1088,6 +1089,88 @@ def cmd_validate_change(args: argparse.Namespace) -> int:
     return exit_code_for_pr_summary(summary)
 
 
+def cmd_provider_readiness(args: argparse.Namespace) -> int:
+    """Safe live-provider eligibility audit — never sends model prompts."""
+    from .provider_readiness_engine import ProviderReadinessEngine
+    from .provider_readiness_reporting import human_summary, render_all_audiences
+    from .provider_readiness_staleness import evaluate_staleness, validate_record_structure
+    from .provider_readiness_store import ProviderReadinessStore
+    from .safe_policy import PolicyError
+
+    try:
+        registry = ProjectRegistry()
+        engine = ProviderReadinessEngine(registry=registry)
+        store = ProviderReadinessStore()
+
+        if args.validate:
+            record = store.load_record(args.validate)
+            errors = validate_record_structure(record.to_dict())
+            from .provider_readiness_engine import _git_head
+            from .provider_readiness_profiles import adapter_version_for
+
+            current = evaluate_staleness(
+                record,
+                repository_commit=_git_head(_repo_root()),
+                adapter_version=adapter_version_for(record.provider_id),
+                executable_fingerprint=record.executable_fingerprint,
+            )
+            payload = {
+                "valid": not errors,
+                "structure_errors": errors,
+                "stale_vs_current": current.to_dict(),
+                "live_provider_invocations": 0,
+                "record": record.to_dict(),
+            }
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return 0 if not errors else 1
+
+        if not args.project_id:
+            print("ERROR: --project-id is required unless --validate is set", file=sys.stderr)
+            return 1
+
+        providers = [args.provider] if args.provider else None
+        bundle = engine.audit_all(
+            project_id=args.project_id,
+            providers=providers,
+            include_help_summary=bool(args.include_help_summary),
+            allow_unknown_auth_conditional=bool(args.allow_unknown_auth_conditional),
+        )
+        out_path = store.save_bundle(bundle)
+        reports = render_all_audiences(bundle)
+
+        if args.output:
+            Path(args.output).write_text(
+                json.dumps(bundle.to_dict(), indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+
+        if args.json:
+            payload = bundle.to_dict()
+            payload["stored_path"] = str(out_path)
+            if args.show_combinations:
+                payload["combinations_only"] = [c.to_dict() for c in bundle.combinations]
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(human_summary(bundle))
+            if args.show_combinations:
+                print("## Recommended combinations")
+                for c in bundle.combinations:
+                    mark = " *" if c.recommended else ""
+                    print(
+                        f"- {c.category}: {c.implementer_provider_id}/"
+                        f"{c.reviewer_provider_id} [{c.independence_status}]{mark}"
+                    )
+                    print(f"  {c.notes}")
+            if args.audience:
+                print(reports.get(args.audience, ""))
+            print(f"stored: {out_path}")
+            print("live_provider_invocations: 0")
+        return 0
+    except (PolicyError, ProjectRegistryError, FileNotFoundError, KeyError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
+
 def cmd_build_report(args: argparse.Namespace) -> int:
     from . import __version__ as pkg_version
     from .reporting_builder import ReportingBuildError
@@ -1226,7 +1309,7 @@ def cmd_show_report(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai-dev-os",
-        description="AI Development Operating System (Round 4C)",
+        description="AI Development Operating System (Round 4D1)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1685,6 +1768,35 @@ def build_parser() -> argparse.ArgumentParser:
     p_shr.add_argument("--format", default="text", choices=["text", "json"])
     p_shr.add_argument("--json", action="store_true")
     p_shr.set_defaults(func=cmd_show_report)
+
+    p_prdy = sub.add_parser(
+        "provider-readiness",
+        help="Safe provider eligibility audit (discovery/version/help/auth-status only; no live prompts)",
+    )
+    p_prdy.add_argument(
+        "--project-id",
+        required=False,
+        default=None,
+        help="Registered project id (required unless --validate)",
+    )
+    p_prdy.add_argument("--provider", default=None, help="Single provider id (default: all adapters)")
+    p_prdy.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    p_prdy.add_argument("--output", default=None, help="Optional path for JSON bundle copy")
+    p_prdy.add_argument("--validate", default=None, help="Validate/stale-check readiness_id")
+    p_prdy.add_argument("--show-combinations", action="store_true")
+    p_prdy.add_argument("--include-help-summary", action="store_true")
+    p_prdy.add_argument(
+        "--allow-unknown-auth-conditional",
+        action="store_true",
+        help="Allow conditional eligibility when auth is unknown (still not live)",
+    )
+    p_prdy.add_argument(
+        "--audience",
+        default=None,
+        choices=["executive", "operator", "developer", "auditor"],
+        help="Also print a readiness audience report",
+    )
+    p_prdy.set_defaults(func=cmd_provider_readiness)
 
     return parser
 

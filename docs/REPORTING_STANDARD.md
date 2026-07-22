@@ -1,6 +1,6 @@
 # Reporting Standard (Round 4C)
 
-**Package:** `0.7.0`  
+**Package:** `0.7.0` (reporting subsystem; overall package may be newer — see Round 4D1 `0.8.0`)
 **Schema / policy / renderer:** `4c.1`  
 **Principle:** Canonical structured evidence → deterministic validation → relevance selection → audience-specific rendering → readable report → audit appendix.
 

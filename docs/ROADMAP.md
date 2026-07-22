@@ -50,7 +50,7 @@ Local CI, quality gates, and pull-request validation foundation:
 
 ## Next development round (planned)
 
-**High-quality reporting system upgrade** — separate explicit approval and plan required before implementation.
+**Separately authorized live local CLI smoke (Round 4D2)** — requires explicit approval after Round 4D1 readiness evidence.
 
 ## Round 4C (complete) — evidence-first reporting
 
@@ -61,26 +61,38 @@ Local CI, quality gates, and pull-request validation foundation:
 - CLI: `build-report`, `render-report`, `validate-report`, `show-report`
 - Design: `docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md`
 - Standard: `docs/REPORTING_STANDARD.md`
-- Package **`0.7.0`**
+- Package **`0.7.0`** (superseded package baseline by Round 4D1)
 - Round 4B remote CI remains complete; no live provider; no vuln DB; Equitify disconnected
+
+## Round 4D1 (complete) — live-provider readiness hardening
+
+- Safe multi-candidate executable discovery (no full PATH dump)
+- Allowlisted version/help probes; auth-status only when explicitly safe
+- Noninteractive / role / independence matrices (no live prompts)
+- Readiness verdicts and Round 4C audience reports
+- CLI: `provider-readiness`
+- Design: `docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md`
+- Standard: `docs/PROVIDER_READINESS_STANDARD.md`
+- Schema/policy **`4d1.1`**; package **`0.8.0`**
+- Live mode remains disabled; Round 4D2 requires separate authorization
 
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs
 - Vulnerability database scanning (OSV/NVD/etc.) when explicitly approved
 - Required status-check enforcement
-- Separately authorized **live** local CLI smoke for one provider
+- Separately authorized **live** local CLI smoke for one provider (Round 4D2)
 - Broader command profiles beyond pytest
 - Equitify connection after the exact user command
-- Any automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local/remote CI gates
+- Any automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local/remote CI gates + readiness auditing
 
 ## Longer-term vision (not implementation status)
 
 Completed rounds above remain authoritative for **what is implemented**. Blueprint Phases A–I in [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) define the longer-term vision beyond Round 4B. Each future implementation round requires separate approval and planning.
 
-**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4C / package **0.7.0** is the implemented reporting baseline (memory still deferred).
+**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4D1 / package **0.8.0** is the implemented baseline (memory still deferred).
 
-**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4C / package **0.7.0** remains the implemented baseline for CI + reporting.
+**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4D1 / package **0.8.0** remains the implemented baseline for CI + reporting + readiness.
 
 ## Explicitly deferred
 

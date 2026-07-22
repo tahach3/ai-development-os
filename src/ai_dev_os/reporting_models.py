@@ -68,6 +68,7 @@ class EvidenceType(str, Enum):
     REPAIR_ROUND = "repair_round"
     ORCHESTRATION_EVENT = "orchestration_event"
     PROVIDER_RESULT = "provider_result"
+    PROVIDER_READINESS = "provider_readiness"
     CI_STAGE = "ci_stage"
     CI_RUN = "ci_run"
     PR_VALIDATION = "pr_validation"

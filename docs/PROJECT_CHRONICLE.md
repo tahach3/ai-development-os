@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.7.0` · **Round:** 4C
+**As of:** 2026-07-22 · **Package version:** `0.8.0` · **Round:** 4D1
 
 ---
 
@@ -19,6 +19,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **local CI / PR validation** lane (Round 4A): deterministic quality gates, change-range validation, dependency-policy (not vuln DB), GitHub workflow definition.
 - A **private remote CI validation** lane (Round 4B): first successful GitHub Actions run on private repo `tahach3/ai-development-os` (no secrets, no live providers, no deploy/merge).
 - An **evidence-first reporting** lane (Round 4C): canonical evidence, claim statuses, audience/detail renderers, deterministic relevance, integrity fingerprints (no LLM summaries).
+- A **provider readiness** lane (Round 4D1): safe eligibility auditing for future live smoke — discovery/version/help/auth-status only; never live prompts.
 
 ### It is not
 
@@ -281,15 +282,30 @@ python -m pytest -q
 - Package version **`0.7.0`**
 - Round 4B remote CI remains complete; no live provider; no vuln DB; no dashboard; Equitify disconnected
 
+### Round 4D1 (done) — live-provider eligibility audit and readiness hardening
+
+- Design: `docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md`
+- Standard: `docs/PROVIDER_READINESS_STANDARD.md`
+- Multi-candidate executable discovery (Python/`where`/`Get-Command`); no full PATH dump
+- Allowlisted version/help probes; auth-status only when adapter-safe (otherwise `verification_unsupported`)
+- Noninteractive / role / independence matrices without live prompts
+- Controlled readiness verdicts; Round 4C audience reports
+- CLI: `provider-readiness` with `live_provider_invocations: 0`
+- Storage: `workspace/provider_readiness/` (gitignored)
+- Schema/policy versions: `4d1.1` (independent of provider `3b.1` / reporting `4c.1`)
+- Package version **`0.8.0`**
+- Live mode remains disabled; Round 4D2 requires separate authorization
+- Equitify disconnected; no credential-file inspection; simulation ≠ live
+
 ### Deferred (explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs (tags remain residual supply-chain risk)
 - Vulnerability database scanning
-- Separately authorized **live** local CLI model smoke (retry only with a proven noninteractive installed provider + implemented gated live path)
+- Separately authorized **live** local CLI model smoke (**Round 4D2** — only after readiness evidence + explicit authorization)
 - Equitify connection (connect phrase only)
 - Broader command profiles beyond pytest
 - General provider-generated patch engines
-- Automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local/remote CI gates + evidence-first reporting
+- Automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local/remote CI gates + evidence-first reporting + readiness auditing
 
 Still explicitly out of scope unless re-approved later:
 
@@ -348,6 +364,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ROUND_4A_LOCAL_CI_DESIGN.md` | Round 4A local CI / PR validation design (+ Round 4B remote evidence) |
 | `docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md` | Round 4C evidence-first reporting design |
 | `docs/REPORTING_STANDARD.md` | Round 4C reporting standard / CLI contract |
+| `docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md` | Round 4D1 provider readiness design |
+| `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 readiness standard / CLI contract |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |
 | `docs/ROADMAP.md` | Round sequencing |

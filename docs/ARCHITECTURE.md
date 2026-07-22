@@ -1,8 +1,8 @@
-# Architecture (Round 4C)
+# Architecture (Round 4D1)
 
 ## Purpose
 
-AI Development OS is a **local control plane** for structured software tasks. It does not call paid model APIs by default. It validates tasks, routes them deterministically, builds minimal context packets, manages **plan approval gates**, writes **manual handoff** files, runs **allowlisted local pytest** in isolated worktrees (Round 3A), exposes **controlled provider CLI adapters** (Round 3B), runs **bounded simulated orchestration** (Round 3C), provides **local CI quality gates** plus **pull-request / change validation** (Round 4A), has **validated private remote GitHub Actions** on `tahach3/ai-development-os` (Round 4B — first success run `29930178622`), and produces **evidence-first audience-specific reports** (Round 4C).
+AI Development OS is a **local control plane** for structured software tasks. It does not call paid model APIs by default. It validates tasks, routes them deterministically, builds minimal context packets, manages **plan approval gates**, writes **manual handoff** files, runs **allowlisted local pytest** in isolated worktrees (Round 3A), exposes **controlled provider CLI adapters** (Round 3B), runs **bounded simulated orchestration** (Round 3C), provides **local CI quality gates** plus **pull-request / change validation** (Round 4A), has **validated private remote GitHub Actions** on `tahach3/ai-development-os` (Round 4B), produces **evidence-first audience-specific reports** (Round 4C), and performs **safe provider readiness auditing** (Round 4D1 — discovery/version/help/auth-status only; **zero live prompts**).
 
 ## Inspired by (patterns only — no copied code)
 
@@ -19,14 +19,15 @@ See `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`.
 | Local CI / PR validation gates | — | **Round 4A** |
 | Private remote CI validation | — | **Round 4B** (run `29930178622`) |
 | Evidence-first multi-audience reporting | — | **Round 4C** |
+| Safe provider readiness / eligibility audit | — | **Round 4D1** |
 | Allowlisted local pytest exec | — | Round 3A |
 
 ## Layers
 
 1. **Config** — routing, risk, budgets, repair limits, projects, providers, orchestration, **`ci_policy.yaml`**.
-2. **Schemas** — task/plan/report + execution `3a.1` + provider `3b.1` + orchestration `3c.1` + CI/PR `4a.1` + reporting `4c.1`.
-3. **Domain** — models, validation, fingerprints, orchestration models, CI models, **reporting models**.
-4. **Services** — registry, routing, context, git inspect, stores, approval, sessions/worktrees/safe_exec, provider lane, orchestration engine, CI engine, **canonical report builder/renderer/validator**.
+2. **Schemas** — task/plan/report + execution `3a.1` + provider `3b.1` + orchestration `3c.1` + CI/PR `4a.1` + reporting `4c.1` + provider readiness `4d1.1`.
+3. **Domain** — models, validation, fingerprints, orchestration models, CI models, reporting models, **provider readiness models**.
+4. **Services** — registry, routing, context, git inspect, stores, approval, sessions/worktrees/safe_exec, provider lane, orchestration engine, CI engine, canonical report builder/renderer/validator, **provider readiness engine**.
 5. **Adapters** — manual handoff (`adapters/`) **and** provider CLI lane (`providers/`) **and** legacy report importers.
 6. **CLI** — operator interface including `ci-check`, `validate-change`, `build-report`, `render-report`, `validate-report`, `show-report`.
 7. **CI definition + remote parity** — `.github/workflows/ci.yml` with `permissions: contents: read` only; Round 4B validated private remote execution (no secrets, no live providers, no deploy/merge).
@@ -46,7 +47,7 @@ register-project → create-task → … → approve-plan
 
 ## Compatibility
 
-- Package version `0.7.0`
+- Package version `0.8.0`
 - Round 3A execution envelopes remain schema `3a.1`
 - Provider results remain schema `3b.1`
 - Orchestration artifacts remain schema `3c.1`
@@ -55,7 +56,7 @@ register-project → create-task → … → approve-plan
 
 ## Future platform direction
 
-The current implemented architecture is **Round 4A/4B CI + Round 4C evidence-first reporting** (package **0.7.0**). [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines longer-term platform direction; blueprint features are not implemented unless explicitly recorded in later rounds.
+The current implemented architecture is **Round 4A/4B CI + Round 4C reporting + Round 4D1 provider readiness** (package **0.8.0**). [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines longer-term platform direction; blueprint features are not implemented unless explicitly recorded in later rounds. Live provider smoke requires separate Round 4D2 authorization.
 
 Phase B1 shared-memory design (not implemented): [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md). Phase B2 implementation decisions only: [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — no memory runtime yet.
 

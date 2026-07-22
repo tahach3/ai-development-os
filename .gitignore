@@ -60,6 +60,8 @@ workspace/orchestrations/*
 !workspace/orchestrations/.gitkeep
 workspace/provider_executions/*
 !workspace/provider_executions/.gitkeep
+workspace/provider_readiness/*
+!workspace/provider_readiness/.gitkeep
 
 # Local project registry (example stays tracked)
 config/projects.yaml

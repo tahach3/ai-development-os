@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/provider_readiness.schema.json",
+  "title": "ProviderReadinessRecord",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "readiness_id",
+    "schema_version",
+    "readiness_policy_version",
+    "provider_id",
+    "discovery_status",
+    "authentication_status",
+    "noninteractive_status",
+    "final_readiness_verdict",
+    "live_provider_invocations",
+    "record_fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": "4d1.1" },
+    "readiness_policy_version": { "const": "4d1.1" },
+    "live_provider_invocations": { "const": 0 },
+    "discovery_status": {
+      "type": "string",
+      "enum": [
+        "installed",
+        "not_installed",
+        "ambiguous_installation",
+        "executable_untrusted",
+        "probe_failed"
+      ]
+    },
+    "authentication_status": {
+      "type": "string",
+      "enum": [
+        "authenticated_verified",
+        "unauthenticated_verified",
+        "reported_authenticated",
+        "unknown",
+        "verification_unsupported",
+        "verification_failed"
+      ]
+    },
+    "noninteractive_status": {
+      "type": "string",
+      "enum": [
+        "supported_verified",
+        "supported_documented",
+        "unsupported_verified",
+        "ambiguous",
+        "unavailable"
+      ]
+    },
+    "final_readiness_verdict": {
+      "type": "string",
+      "enum": [
+        "eligible_for_bounded_live_smoke",
+        "conditionally_eligible_for_bounded_live_smoke",
+        "installed_but_authentication_unverified",
+        "installed_but_noninteractive_unverified",
+        "installed_but_version_unsupported",
+        "ambiguous_provider_installation",
+        "no_eligible_provider",
+        "policy_blocked",
+        "probe_failed",
+        "invalid_record"
+      ]
+    }
+  }
+}

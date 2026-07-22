@@ -58,6 +58,15 @@ Round 4C reporting adds:
 - Report generation never executes commands selected from report content
 - Runtime reports remain local and gitignored
 
+Round 4D1 provider readiness adds:
+
+- Allowlisted discovery/version/help(/auth-status) probes only — never live prompts
+- No credential-file or token-database inspection; probe output redacted
+- No full PATH or environment dumps in readiness records
+- Ambiguous installations never silently selected
+- Live mode cannot be enabled by readiness tooling (`live_provider_invocations: 0`)
+- Equitify identifiers and paths rejected during audits
+
 ## Validation
 
 - Explicit required fields and enums
@@ -68,7 +77,8 @@ Round 4C reporting adds:
 - Orchestration schema `3c.1`; unsupported versions fail closed
 - CI schema/policy `4a.1`; unsupported versions fail closed
 - Reporting schema/policy `4c.1`; fingerprint + freshness validation fail closed
+- Provider readiness schema/policy `4d1.1`; staleness + zero live-invocation validation fail closed
 
 ## Trust boundary
 
-Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.
+Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). Round 4D1 readiness audits inspect local CLIs harmlessly and never send model prompts. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.

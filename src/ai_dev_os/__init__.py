@@ -1,3 +1,3 @@
-"""AI Development Operating System — Round 4C (evidence-first reporting)."""
+"""AI Development Operating System — Round 4D1 (provider readiness auditing)."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"

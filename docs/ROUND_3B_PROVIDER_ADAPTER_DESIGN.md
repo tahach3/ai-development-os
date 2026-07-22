@@ -4,6 +4,8 @@
 **Scope:** Provider-neutral contracts, safe discovery, fail-closed config, simulated provider, CLI adapter shells (no live model calls by default), normalized result envelopes, operator CLI, synthetic validation on `calculator-demo`  
 **Not in scope:** Live provider model execution (separately authorized smoke only), Equitify, paid APIs, HTTP model calls, LangChain/CrewAI/AutoGen, dashboards, browser automation, auto-merge/push/deploy
 
+**Follow-on:** Round 4D1 (`docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md`, `docs/PROVIDER_READINESS_STANDARD.md`) adds readiness/eligibility auditing without live prompts.
+
 **Package version target:** `0.4.0` (schema `3b.1`; Round 3A envelopes remain `3a.1`)
 
 ---
