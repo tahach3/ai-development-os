@@ -86,7 +86,8 @@ def sanitize_executable_location(path: str | Path) -> str:
     # Collapse to drive/root class without listing PATH entries.
     parts = resolved.parts
     if len(parts) >= 2:
-        return f"path_entry/{parts[0].rstrip('\\/')}/{name}"
+        root = parts[0].rstrip("\\/")
+        return f"path_entry/{root}/{name}"
     return f"path_entry/{name}"
 
 
