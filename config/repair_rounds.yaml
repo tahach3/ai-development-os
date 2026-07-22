@@ -1,0 +1,3 @@
+# Maximum repair rounds before task is blocked for human review.
+# Inspired by Ralphex max-iteration / stalemate concepts (pattern only).
+max_repair_rounds: 3

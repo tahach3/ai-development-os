@@ -77,8 +77,9 @@ class ReportOutcome(str, Enum):
 
 class ReviewVerdict(str, Enum):
     PASS = "pass"
-    FAIL = "fail"
-    NEEDS_CHANGES = "needs_changes"
+    PASS_WITH_NOTES = "pass_with_notes"
+    CHANGES_REQUIRED = "changes_required"
+    BLOCKED = "blocked"
 
 
 class FindingSeverity(str, Enum):
@@ -86,6 +87,39 @@ class FindingSeverity(str, Enum):
     MAJOR = "major"
     MINOR = "minor"
     NOTE = "note"
+
+
+class PlanStatus(str, Enum):
+    DRAFT = "draft"
+    READY_FOR_APPROVAL = "ready_for_approval"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"
+
+
+class ApprovalRequirement(str, Enum):
+    NONE = "none"
+    HUMAN = "human"
+    HUMAN_HIGH_RISK = "human_high_risk"
+
+
+# Plan status transitions (superseded reachable from non-terminal active states).
+PLAN_TRANSITIONS: dict[PlanStatus, frozenset[PlanStatus]] = {
+    PlanStatus.DRAFT: frozenset(
+        {PlanStatus.READY_FOR_APPROVAL, PlanStatus.SUPERSEDED, PlanStatus.REJECTED}
+    ),
+    PlanStatus.READY_FOR_APPROVAL: frozenset(
+        {
+            PlanStatus.APPROVED,
+            PlanStatus.REJECTED,
+            PlanStatus.DRAFT,
+            PlanStatus.SUPERSEDED,
+        }
+    ),
+    PlanStatus.APPROVED: frozenset({PlanStatus.SUPERSEDED, PlanStatus.DRAFT}),
+    PlanStatus.REJECTED: frozenset({PlanStatus.SUPERSEDED, PlanStatus.DRAFT}),
+    PlanStatus.SUPERSEDED: frozenset(),
+}
 
 
 # Allowed forward transitions. Special statuses blocked/cancelled reachable from most active states.
@@ -312,6 +346,98 @@ class RoutingDecision:
 
 
 @dataclass
+class Plan:
+    """Durable plan artifact (inspired by CC-SDD approved-spec + Liza audit fields)."""
+
+    plan_id: str
+    task_id: str
+    project_id: str
+    planner_agent: str
+    starting_commit: str
+    objective: str
+    assumptions: list[str] = field(default_factory=list)
+    scope: list[str] = field(default_factory=list)
+    prohibited_actions: list[str] = field(default_factory=list)
+    files_expected_to_change: list[str] = field(default_factory=list)
+    implementation_steps: list[str] = field(default_factory=list)
+    testing_plan: list[str] = field(default_factory=list)
+    rollback_or_recovery_plan: list[str] = field(default_factory=list)
+    risks: list[str] = field(default_factory=list)
+    unresolved_questions: list[str] = field(default_factory=list)
+    approval_requirement: ApprovalRequirement = ApprovalRequirement.HUMAN
+    status: PlanStatus = PlanStatus.DRAFT
+    created_timestamp: str = field(default_factory=utc_now_iso)
+    approved_timestamp: str | None = None
+    approved_by: str | None = None
+    approval_note: str | None = None
+    content_fingerprint: str | None = None
+    approved_fingerprint: str | None = None
+    rejection_reason: str | None = None
+    risk_level: RiskLevel = RiskLevel.MEDIUM
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "plan_id": self.plan_id,
+            "task_id": self.task_id,
+            "project_id": self.project_id,
+            "planner_agent": self.planner_agent,
+            "starting_commit": self.starting_commit,
+            "objective": self.objective,
+            "assumptions": list(self.assumptions),
+            "scope": list(self.scope),
+            "prohibited_actions": list(self.prohibited_actions),
+            "files_expected_to_change": list(self.files_expected_to_change),
+            "implementation_steps": list(self.implementation_steps),
+            "testing_plan": list(self.testing_plan),
+            "rollback_or_recovery_plan": list(self.rollback_or_recovery_plan),
+            "risks": list(self.risks),
+            "unresolved_questions": list(self.unresolved_questions),
+            "approval_requirement": self.approval_requirement.value,
+            "status": self.status.value,
+            "created_timestamp": self.created_timestamp,
+            "approved_timestamp": self.approved_timestamp,
+            "approved_by": self.approved_by,
+            "approval_note": self.approval_note,
+            "content_fingerprint": self.content_fingerprint,
+            "approved_fingerprint": self.approved_fingerprint,
+            "rejection_reason": self.rejection_reason,
+            "risk_level": self.risk_level.value,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Plan:
+        return cls(
+            plan_id=str(data["plan_id"]),
+            task_id=str(data["task_id"]),
+            project_id=str(data["project_id"]),
+            planner_agent=str(data["planner_agent"]),
+            starting_commit=str(data["starting_commit"]),
+            objective=str(data["objective"]),
+            assumptions=list(data.get("assumptions") or []),
+            scope=list(data.get("scope") or []),
+            prohibited_actions=list(data.get("prohibited_actions") or []),
+            files_expected_to_change=list(data.get("files_expected_to_change") or []),
+            implementation_steps=list(data.get("implementation_steps") or []),
+            testing_plan=list(data.get("testing_plan") or []),
+            rollback_or_recovery_plan=list(data.get("rollback_or_recovery_plan") or []),
+            risks=list(data.get("risks") or []),
+            unresolved_questions=list(data.get("unresolved_questions") or []),
+            approval_requirement=ApprovalRequirement(
+                data.get("approval_requirement", ApprovalRequirement.HUMAN.value)
+            ),
+            status=PlanStatus(data.get("status", PlanStatus.DRAFT.value)),
+            created_timestamp=str(data.get("created_timestamp") or utc_now_iso()),
+            approved_timestamp=data.get("approved_timestamp"),
+            approved_by=data.get("approved_by"),
+            approval_note=data.get("approval_note"),
+            content_fingerprint=data.get("content_fingerprint"),
+            approved_fingerprint=data.get("approved_fingerprint"),
+            rejection_reason=data.get("rejection_reason"),
+            risk_level=RiskLevel(data.get("risk_level", RiskLevel.MEDIUM.value)),
+        )
+
+
+@dataclass
 class ImplementationReport:
     task_id: str
     summary: str
@@ -321,6 +447,9 @@ class ImplementationReport:
     created_at: str = field(default_factory=utc_now_iso)
     token_usage: TokenUsage = field(default_factory=TokenUsage)
     notes: str | None = None
+    plan_fingerprint: str | None = None
+    task_fingerprint: str | None = None
+    content_fingerprint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -332,6 +461,9 @@ class ImplementationReport:
             "created_at": self.created_at,
             "token_usage": self.token_usage.to_dict(),
             "notes": self.notes,
+            "plan_fingerprint": self.plan_fingerprint,
+            "task_fingerprint": self.task_fingerprint,
+            "content_fingerprint": self.content_fingerprint,
         }
 
     @classmethod
@@ -345,6 +477,9 @@ class ImplementationReport:
             created_at=str(data.get("created_at") or utc_now_iso()),
             token_usage=TokenUsage.from_dict(data.get("token_usage")),
             notes=data.get("notes"),
+            plan_fingerprint=data.get("plan_fingerprint"),
+            task_fingerprint=data.get("task_fingerprint"),
+            content_fingerprint=data.get("content_fingerprint"),
         )
 
 
@@ -361,6 +496,14 @@ class ReviewFinding:
             "path": self.path,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ReviewFinding:
+        return cls(
+            severity=FindingSeverity(data["severity"]),
+            summary=str(data["summary"]),
+            path=data.get("path"),
+        )
+
 
 @dataclass
 class ReviewReport:
@@ -368,8 +511,12 @@ class ReviewReport:
     reviewer_role: ModelRole
     verdict: ReviewVerdict
     findings: list[ReviewFinding] = field(default_factory=list)
+    confirmed_findings: list[ReviewFinding] = field(default_factory=list)
+    rejected_findings: list[ReviewFinding] = field(default_factory=list)
     notes: str | None = None
     created_at: str = field(default_factory=utc_now_iso)
+    implementation_report_fingerprint: str | None = None
+    content_fingerprint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -377,26 +524,76 @@ class ReviewReport:
             "reviewer_role": self.reviewer_role.value,
             "verdict": self.verdict.value,
             "findings": [f.to_dict() for f in self.findings],
+            "confirmed_findings": [f.to_dict() for f in self.confirmed_findings],
+            "rejected_findings": [f.to_dict() for f in self.rejected_findings],
             "notes": self.notes,
             "created_at": self.created_at,
+            "implementation_report_fingerprint": self.implementation_report_fingerprint,
+            "content_fingerprint": self.content_fingerprint,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ReviewReport:
-        findings = [
-            ReviewFinding(
-                severity=FindingSeverity(item["severity"]),
-                summary=str(item["summary"]),
-                path=item.get("path"),
-            )
-            for item in (data.get("findings") or [])
-        ]
+        def _findings(key: str) -> list[ReviewFinding]:
+            return [ReviewFinding.from_dict(item) for item in (data.get(key) or [])]
+
         return cls(
             task_id=str(data["task_id"]),
             reviewer_role=ModelRole(data["reviewer_role"]),
             verdict=ReviewVerdict(data["verdict"]),
-            findings=findings,
+            findings=_findings("findings"),
+            confirmed_findings=_findings("confirmed_findings"),
+            rejected_findings=_findings("rejected_findings"),
             notes=data.get("notes"),
+            created_at=str(data.get("created_at") or utc_now_iso()),
+            implementation_report_fingerprint=data.get(
+                "implementation_report_fingerprint"
+            ),
+            content_fingerprint=data.get("content_fingerprint"),
+        )
+
+
+@dataclass
+class RepairRound:
+    """Repair iteration record (inspired by Ralphex max-round / stalemate concepts)."""
+
+    task_id: str
+    round_number: int
+    reason: str
+    findings_addressed: list[str] = field(default_factory=list)
+    files_changed: list[str] = field(default_factory=list)
+    tests_rerun: list[str] = field(default_factory=list)
+    result: str = "pending"
+    scope_changed: bool = False
+    reapproval_required: bool = False
+    created_at: str = field(default_factory=utc_now_iso)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "task_id": self.task_id,
+            "round_number": self.round_number,
+            "reason": self.reason,
+            "findings_addressed": list(self.findings_addressed),
+            "files_changed": list(self.files_changed),
+            "tests_rerun": list(self.tests_rerun),
+            "result": self.result,
+            "scope_changed": self.scope_changed,
+            "reapproval_required": self.reapproval_required,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RepairRound:
+        return cls(
+            task_id=str(data["task_id"]),
+            round_number=int(data["round_number"]),
+            reason=str(data["reason"]),
+            findings_addressed=list(data.get("findings_addressed") or []),
+            files_changed=list(data.get("files_changed") or []),
+            tests_rerun=list(data.get("tests_rerun") or []),
+            result=str(data.get("result") or "pending"),
+            scope_changed=bool(data.get("scope_changed", False)),
+            reapproval_required=bool(data.get("reapproval_required", False)),
             created_at=str(data.get("created_at") or utc_now_iso()),
         )
 

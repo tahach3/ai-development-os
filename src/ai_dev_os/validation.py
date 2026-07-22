@@ -1,4 +1,4 @@
-"""Explicit validation for tasks, paths, and lifecycle transitions."""
+"""Explicit validation for tasks, paths, plans, and lifecycle transitions."""
 
 from __future__ import annotations
 
@@ -6,7 +6,11 @@ from pathlib import Path, PureWindowsPath, PurePosixPath
 
 from .models import (
     LIFECYCLE_TRANSITIONS,
+    PLAN_TRANSITIONS,
+    ApprovalRequirement,
     Complexity,
+    Plan,
+    PlanStatus,
     RiskLevel,
     Task,
     TaskStatus,
@@ -145,3 +149,53 @@ def apply_status_transition(task: Task, new_status: TaskStatus) -> Task:
 
     data["updated_at"] = utc_now_iso()
     return Task.from_dict(data)
+
+
+REQUIRED_PLAN_FIELDS = (
+    "plan_id",
+    "task_id",
+    "project_id",
+    "planner_agent",
+    "starting_commit",
+    "objective",
+)
+
+
+def validate_plan_transition(current: PlanStatus, new: PlanStatus) -> None:
+    if current == new:
+        return
+    allowed = PLAN_TRANSITIONS.get(current, frozenset())
+    if new not in allowed:
+        raise ValidationError(
+            f"Invalid plan transition: {current.value} → {new.value}. "
+            f"Allowed: {sorted(s.value for s in allowed) or 'none'}"
+        )
+
+
+def validate_plan_dict(data: dict) -> Plan:
+    if not isinstance(data, dict):
+        raise ValidationError("Plan payload must be a mapping")
+    missing = [name for name in REQUIRED_PLAN_FIELDS if not data.get(name)]
+    if missing:
+        raise ValidationError(f"Missing required plan fields: {', '.join(missing)}")
+    try:
+        if "status" in data and data["status"] is not None:
+            PlanStatus(data["status"])
+        if "approval_requirement" in data and data["approval_requirement"] is not None:
+            ApprovalRequirement(data["approval_requirement"])
+        if "risk_level" in data and data["risk_level"] is not None:
+            RiskLevel(data["risk_level"])
+        plan = Plan.from_dict(data)
+    except (KeyError, ValueError, TypeError) as exc:
+        raise ValidationError(f"Invalid plan payload: {exc}") from exc
+    if not plan.objective.strip():
+        raise ValidationError("objective must be non-empty")
+    if not plan.starting_commit.strip():
+        raise ValidationError("starting_commit must be non-empty")
+    if not plan.implementation_steps:
+        raise ValidationError("implementation_steps must be non-empty")
+    if not plan.testing_plan:
+        raise ValidationError("testing_plan must be non-empty")
+    if not plan.files_expected_to_change:
+        raise ValidationError("files_expected_to_change must be non-empty")
+    return plan

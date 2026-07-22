@@ -1,3 +1,3 @@
-"""AI Development Operating System — Round 1 foundation."""
+"""AI Development Operating System — Round 2 (plans, approval, repair)."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

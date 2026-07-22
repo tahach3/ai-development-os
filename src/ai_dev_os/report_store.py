@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .fingerprints import (
+    fingerprint_implementation_report,
+    fingerprint_review_report,
+)
 from .models import ImplementationReport, ReviewReport, utc_now_iso
 
 
@@ -21,13 +25,19 @@ class ReportStore:
         self.review_dir.mkdir(parents=True, exist_ok=True)
 
     def save_implementation(self, report: ImplementationReport) -> Path:
+        data = report.to_dict()
+        report.content_fingerprint = fingerprint_implementation_report(data)
+        data = report.to_dict()
         path = self.impl_dir / f"{report.task_id}.{_stamp()}.json"
-        path.write_text(json.dumps(report.to_dict(), indent=2) + "\n", encoding="utf-8")
+        path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         return path
 
     def save_review(self, report: ReviewReport) -> Path:
+        data = report.to_dict()
+        report.content_fingerprint = fingerprint_review_report(data)
+        data = report.to_dict()
         path = self.review_dir / f"{report.task_id}.{_stamp()}.json"
-        path.write_text(json.dumps(report.to_dict(), indent=2) + "\n", encoding="utf-8")
+        path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         return path
 
     def list_implementation(self, task_id: str | None = None) -> list[ImplementationReport]:
@@ -52,7 +62,10 @@ class ReportStore:
         reviews = self.list_reviews(task_id)
         return reviews[-1] if reviews else None
 
+    def latest_implementation(self, task_id: str) -> ImplementationReport | None:
+        reports = self.list_implementation(task_id)
+        return reports[-1] if reports else None
+
 
 def _stamp() -> str:
-    # Filesystem-safe stamp from utc iso.
     return utc_now_iso().replace(":", "").replace("+00:00", "Z")

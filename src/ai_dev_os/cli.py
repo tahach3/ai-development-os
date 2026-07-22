@@ -10,36 +10,72 @@ from pathlib import Path
 import yaml
 
 from . import __version__
-from .adapters import get_adapter
+from .approval import approve_plan, reject_plan, submit_plan, apply_plan_content_update
 from .behavioral_metrics import (
     generate_behavioral_report,
     render_behavioral_markdown,
     write_behavioral_report,
 )
 from .context_builder import build_context_packet, write_context_packet
+from .fingerprints import (
+    fingerprint_implementation_report,
+    fingerprint_plan,
+    fingerprint_task,
+)
 from .git_safety import inspect_repo
+from .handoffs import prepare_role_handoff
+from .lifecycle_gates import (
+    GateError,
+    assert_can_create_plan,
+    assert_project_rules_compatible,
+    next_allowed_action,
+)
 from .models import (
     FindingSeverity,
     ImplementationReport,
     ModelRole,
+    PlanStatus,
     ProjectRecord,
+    RepairRound,
     ReportOutcome,
     ReviewFinding,
     ReviewReport,
     ReviewVerdict,
+    RiskLevel,
     TaskStatus,
     TokenUsage,
     TokenUsageMode,
 )
+from .plan_store import PlanStore
 from .project_registry import ProjectRegistry, ProjectRegistryError, example_registry_path
+from .repair_rounds import RepairRoundStore, load_max_repair_rounds
 from .report_store import ReportStore
+from .review_gate import apply_review_verdict
 from .routing import apply_routing, route_task
 from .task_store import TaskStore
-from .validation import ValidationError, validate_task_dict
+from .validation import (
+    ValidationError,
+    apply_status_transition,
+    validate_plan_dict,
+    validate_task_dict,
+)
 
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+def _parse_finding(raw: str) -> ReviewFinding:
+    parts = raw.split("|", 2)
+    if len(parts) < 2:
+        raise ValidationError(
+            "Finding format must be severity|summary or severity|summary|path"
+        )
+    return ReviewFinding(
+        severity=FindingSeverity(parts[0]),
+        summary=parts[1],
+        path=parts[2] if len(parts) > 2 else None,
+    )
 
 
 def cmd_init(_args: argparse.Namespace) -> int:
@@ -53,6 +89,8 @@ def cmd_init(_args: argparse.Namespace) -> int:
         "workspace/reports/review",
         "workspace/handoffs",
         "workspace/context",
+        "workspace/plans",
+        "workspace/repair_rounds",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     registry_path = root / "config" / "projects.yaml"
@@ -121,6 +159,22 @@ def cmd_create_task(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_set_task_status(args: argparse.Namespace) -> int:
+    store = TaskStore()
+    try:
+        task = store.load(args.task_id)
+        new_status = TaskStatus(args.status)
+        updated = apply_status_transition(task, new_status)
+        if args.blocked_reason:
+            updated.blocked_reason = args.blocked_reason
+        store.update(updated)
+    except (ValidationError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"Task {updated.id} → {updated.status.value}")
+    return 0
+
+
 def cmd_validate_task(args: argparse.Namespace) -> int:
     store = TaskStore()
     registry = ProjectRegistry()
@@ -177,17 +231,28 @@ def cmd_build_context(args: argparse.Namespace) -> int:
 def cmd_prepare_handoff(args: argparse.Namespace) -> int:
     store = TaskStore()
     registry = ProjectRegistry()
+    plan_store = PlanStore()
     try:
         task = store.load(args.task_id)
         if not task.assigned_role:
             task = apply_routing(task)
             store.update(task)
         root = registry.resolve_root(task.project_id)
-        role = args.role or task.assigned_role.value
-        adapter = get_adapter(role)
+        role_name = args.role or (task.assigned_role.value if task.assigned_role else None)
+        if not role_name:
+            raise ValidationError("No role specified and task is unassigned")
+        role = ModelRole(role_name)
+        plan = plan_store.approved_for_task(task.id) or plan_store.latest_for_task(task.id)
         out_dir = Path(args.output) if args.output else (_repo_root() / "workspace" / "handoffs")
-        result = adapter.prepare_handoff(task, root, out_dir)
-    except (ValidationError, ProjectRegistryError, KeyError) as exc:
+        result = prepare_role_handoff(
+            role,
+            task,
+            root,
+            out_dir,
+            plan=plan,
+            require_clean_worktree=not bool(args.allow_dirty),
+        )
+    except (ValidationError, ProjectRegistryError, GateError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     print(result.message)
@@ -195,17 +260,182 @@ def cmd_prepare_handoff(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_create_plan(args: argparse.Namespace) -> int:
+    task_store = TaskStore()
+    plan_store = PlanStore()
+    registry = ProjectRegistry()
+    try:
+        task = task_store.load(args.task_id)
+        assert_can_create_plan(task)
+        assert_project_rules_compatible(registry, task)
+        root = registry.resolve_root(task.project_id)
+        inspection = inspect_repo(root)
+        if not inspection.head:
+            raise ValidationError("Cannot create plan without git HEAD")
+        starting = args.starting_commit or inspection.head
+
+        if args.from_file:
+            with Path(args.from_file).open(encoding="utf-8") as fh:
+                data = yaml.safe_load(fh) or {}
+        else:
+            data = {
+                "plan_id": args.plan_id,
+                "task_id": task.id,
+                "project_id": task.project_id,
+                "planner_agent": args.planner_agent,
+                "starting_commit": starting,
+                "objective": args.objective,
+                "assumptions": list(args.assumption or []),
+                "scope": list(args.scope or []),
+                "prohibited_actions": list(args.prohibited_action or []),
+                "files_expected_to_change": list(args.file_expected or []),
+                "implementation_steps": list(args.step or []),
+                "testing_plan": list(args.test or []),
+                "rollback_or_recovery_plan": list(args.rollback or []),
+                "risks": list(args.risk or []),
+                "unresolved_questions": list(args.question or []),
+                "approval_requirement": args.approval_requirement,
+                "risk_level": args.risk_level or task.risk_level.value,
+            }
+        data["task_id"] = task.id
+        data["project_id"] = task.project_id
+        data.setdefault("starting_commit", starting)
+        data.setdefault("plan_id", args.plan_id)
+        data.setdefault("planner_agent", args.planner_agent)
+        plan = plan_store.create(data)
+        print(f"Created plan {plan.plan_id} (status={plan.status.value})")
+        print(f"content_fingerprint: {plan.content_fingerprint}")
+    except (ValidationError, ProjectRegistryError, GateError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_validate_plan(args: argparse.Namespace) -> int:
+    plan_store = PlanStore()
+    try:
+        if args.file:
+            with Path(args.file).open(encoding="utf-8") as fh:
+                data = yaml.safe_load(fh) or {}
+            plan = validate_plan_dict(data)
+        else:
+            plan = plan_store.load(args.plan_id)
+        fp = fingerprint_plan(plan.to_dict())
+    except ValidationError as exc:
+        print(f"INVALID: {exc}", file=sys.stderr)
+        return 1
+    print(f"VALID: plan {plan.plan_id} fingerprint={fp}")
+    return 0
+
+
+def cmd_submit_plan(args: argparse.Namespace) -> int:
+    plan_store = PlanStore()
+    task_store = TaskStore()
+    try:
+        plan = submit_plan(plan_store, args.plan_id)
+        task = task_store.load(plan.task_id)
+        if task.status is TaskStatus.READY_FOR_PLANNING:
+            task = apply_status_transition(task, TaskStatus.PLANNED)
+            meta = dict(task.metadata)
+            meta["current_plan_id"] = plan.plan_id
+            task.metadata = meta
+            task_store.update(task)
+        print(f"Submitted plan {plan.plan_id} → {plan.status.value}")
+        print(f"Task {task.id} status={task.status.value}")
+    except ValidationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_approve_plan(args: argparse.Namespace) -> int:
+    try:
+        plan = approve_plan(
+            PlanStore(),
+            TaskStore(),
+            args.plan_id,
+            approver=args.approver,
+            note=args.note,
+        )
+    except ValidationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"Approved plan {plan.plan_id} by {plan.approved_by}")
+    print(f"approved_fingerprint: {plan.approved_fingerprint}")
+    print(f"approved_timestamp: {plan.approved_timestamp}")
+    return 0
+
+
+def cmd_reject_plan(args: argparse.Namespace) -> int:
+    try:
+        plan = reject_plan(
+            PlanStore(),
+            args.plan_id,
+            rejected_by=args.rejected_by,
+            reason=args.reason,
+        )
+    except ValidationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"Rejected plan {plan.plan_id}: {plan.rejection_reason}")
+    return 0
+
+
+def cmd_show_plan(args: argparse.Namespace) -> int:
+    plan_store = PlanStore()
+    try:
+        plan = plan_store.load(args.plan_id)
+    except ValidationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(plan.to_dict(), indent=2))
+    else:
+        print(f"Plan: {plan.plan_id}")
+        print(f"  task_id: {plan.task_id}")
+        print(f"  status: {plan.status.value}")
+        print(f"  planner_agent: {plan.planner_agent}")
+        print(f"  starting_commit: {plan.starting_commit}")
+        print(f"  objective: {plan.objective}")
+        print(f"  content_fingerprint: {plan.content_fingerprint}")
+        print(f"  approved_fingerprint: {plan.approved_fingerprint}")
+        print(f"  approved_by: {plan.approved_by}")
+        print(f"  approved_timestamp: {plan.approved_timestamp}")
+        print(f"  approval_note: {plan.approval_note}")
+    return 0
+
+
+def cmd_update_plan(args: argparse.Namespace) -> int:
+    """Update plan fields from file; invalidates approval if content changes."""
+    plan_store = PlanStore()
+    try:
+        with Path(args.file).open(encoding="utf-8") as fh:
+            data = yaml.safe_load(fh) or {}
+        data["plan_id"] = args.plan_id
+        plan = validate_plan_dict(data)
+        updated = apply_plan_content_update(plan_store, plan)
+    except ValidationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"Updated plan {updated.plan_id} status={updated.status.value}")
+    print(f"content_fingerprint: {updated.content_fingerprint}")
+    return 0
+
+
 def cmd_record_report(args: argparse.Namespace) -> int:
     store = ReportStore()
+    task_store = TaskStore()
+    plan_store = PlanStore()
     try:
+        task = task_store.load(args.task_id)
         if args.kind == "implementation":
+            plan = plan_store.approved_for_task(task.id)
             usage = TokenUsage(
                 mode=TokenUsageMode(args.usage_mode),
                 input_tokens=args.input_tokens,
                 output_tokens=args.output_tokens,
                 notes=args.usage_notes,
             )
-            # Never fabricate: unavailable clears counts via from_dict semantics.
             if usage.mode is TokenUsageMode.UNAVAILABLE:
                 usage.input_tokens = None
                 usage.output_tokens = None
@@ -217,36 +447,79 @@ def cmd_record_report(args: argparse.Namespace) -> int:
                 outcome=ReportOutcome(args.outcome),
                 token_usage=usage,
                 notes=args.notes,
+                plan_fingerprint=(
+                    plan.approved_fingerprint if plan else None
+                ),
+                task_fingerprint=fingerprint_task(task.to_dict()),
+            )
+            report.content_fingerprint = fingerprint_implementation_report(
+                report.to_dict()
             )
             path = store.save_implementation(report)
+            if task.status is TaskStatus.APPROVED_FOR_IMPLEMENTATION:
+                task = apply_status_transition(task, TaskStatus.IMPLEMENTING)
+            if task.status is TaskStatus.IMPLEMENTING:
+                task = apply_status_transition(task, TaskStatus.VALIDATING)
+            if args.outcome == ReportOutcome.SUCCESS.value and task.status is TaskStatus.VALIDATING:
+                task = apply_status_transition(task, TaskStatus.READY_FOR_REVIEW)
+            task_store.update(task)
         else:
-            findings = []
-            for raw in args.finding or []:
-                # severity|summary[|path]
-                parts = raw.split("|", 2)
-                if len(parts) < 2:
-                    raise ValidationError(
-                        "Finding format must be severity|summary or severity|summary|path"
-                    )
-                findings.append(
-                    ReviewFinding(
-                        severity=FindingSeverity(parts[0]),
-                        summary=parts[1],
-                        path=parts[2] if len(parts) > 2 else None,
-                    )
-                )
+            confirmed = [_parse_finding(r) for r in (args.confirmed_finding or [])]
+            rejected = [_parse_finding(r) for r in (args.rejected_finding or [])]
+            findings = [_parse_finding(r) for r in (args.finding or [])]
+            if not findings and confirmed:
+                findings = list(confirmed)
+            impl = store.latest_implementation(args.task_id)
             report = ReviewReport(
                 task_id=args.task_id,
                 reviewer_role=ModelRole(args.reviewer_role),
                 verdict=ReviewVerdict(args.verdict),
                 findings=findings,
+                confirmed_findings=confirmed,
+                rejected_findings=rejected,
                 notes=args.notes,
+                implementation_report_fingerprint=(
+                    impl.content_fingerprint if impl else None
+                ),
             )
             path = store.save_review(report)
-    except (ValidationError, ValueError) as exc:
+            if task.status is TaskStatus.READY_FOR_REVIEW:
+                task = apply_review_verdict(task, report)
+                task_store.update(task)
+    except (ValidationError, ValueError, GateError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     print(f"Recorded {args.kind} report at {path}")
+    return 0
+
+
+def cmd_record_repair_round(args: argparse.Namespace) -> int:
+    store = RepairRoundStore()
+    task_store = TaskStore()
+    try:
+        rnd = RepairRound(
+            task_id=args.task_id,
+            round_number=int(args.round_number or 0),
+            reason=args.reason,
+            findings_addressed=list(args.finding_addressed or []),
+            files_changed=list(args.file_changed or []),
+            tests_rerun=list(args.test_rerun or []),
+            result=args.result,
+            scope_changed=bool(args.scope_changed),
+            reapproval_required=bool(args.reapproval_required),
+        )
+        recorded, task = store.record(
+            rnd,
+            task_store=task_store,
+            max_rounds=load_max_repair_rounds(),
+        )
+    except ValidationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(
+        f"Recorded repair round {recorded.round_number} for {recorded.task_id}; "
+        f"task_status={task.status.value}"
+    )
     return 0
 
 
@@ -265,7 +538,9 @@ def cmd_review_status(args: argparse.Namespace) -> int:
         return 0
     print(f"Latest review verdict: {latest.verdict.value} by {latest.reviewer_role.value}")
     print(f"Findings: {len(latest.findings)}")
-    for finding in latest.findings:
+    print(f"Confirmed: {len(latest.confirmed_findings)}")
+    print(f"Rejected: {len(latest.rejected_findings)}")
+    for finding in latest.confirmed_findings or latest.findings:
         loc = f" ({finding.path})" if finding.path else ""
         print(f"  - [{finding.severity.value}] {finding.summary}{loc}")
     return 0
@@ -289,6 +564,9 @@ def cmd_behavioral_report(args: argparse.Namespace) -> int:
 
 def cmd_project_status(args: argparse.Namespace) -> int:
     registry = ProjectRegistry()
+    plan_store = PlanStore()
+    report_store = ReportStore()
+    repair_store = RepairRoundStore()
     try:
         if args.project_id:
             projects = [registry.require(args.project_id)]
@@ -307,12 +585,44 @@ def cmd_project_status(args: argparse.Namespace) -> int:
         print(f"  root: {project.root_path}")
         print(f"  active: {project.active}")
         related = [t for t in tasks if t.project_id == project.id]
-        print(f"  tasks: {len(related)}")
-        by_status: dict[str, int] = {}
-        for t in related:
-            by_status[t.status.value] = by_status.get(t.status.value, 0) + 1
-        for status, count in sorted(by_status.items()):
-            print(f"    {status}: {count}")
+        active = [t for t in related if t.status is not TaskStatus.COMPLETED]
+        print(f"  tasks: {len(related)} (active={len(active)})")
+        for t in active:
+            plan = plan_store.latest_for_task(t.id)
+            review = report_store.latest_review(t.id)
+            repair_count = repair_store.count(t.id)
+            approval = "n/a"
+            plan_state = "none"
+            if plan:
+                plan_state = plan.status.value
+                if plan.status is PlanStatus.APPROVED:
+                    approval = f"approved_by={plan.approved_by}"
+                elif plan.status is PlanStatus.READY_FOR_APPROVAL:
+                    approval = "pending"
+                elif plan.status is PlanStatus.REJECTED:
+                    approval = "rejected"
+                else:
+                    approval = plan.status.value
+            blockers = []
+            if t.status is TaskStatus.BLOCKED:
+                blockers.append(t.blocked_reason or "blocked")
+            if t.status is TaskStatus.CANCELLED:
+                blockers.append("cancelled")
+            print(f"  - task {t.id}")
+            print(f"      task_state: {t.status.value}")
+            print(f"      plan_state: {plan_state}")
+            print(f"      approval_status: {approval}")
+            print(
+                f"      assigned_agent: "
+                f"{t.assigned_role.value if t.assigned_role else 'unassigned'}"
+            )
+            print(
+                f"      review_verdict: "
+                f"{review.verdict.value if review else 'none'}"
+            )
+            print(f"      repair_round_count: {repair_count}")
+            print(f"      blockers: {', '.join(blockers) if blockers else 'none'}")
+            print(f"      next_allowed_action: {next_allowed_action(t, plan)}")
         try:
             inspection = inspect_repo(project.root_path)
             print(
@@ -327,7 +637,7 @@ def cmd_project_status(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai-dev-os",
-        description="AI Development Operating System (Round 1 foundation)",
+        description="AI Development Operating System (Round 2)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -360,6 +670,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_create.add_argument("--prohibited-path", action="append", default=[])
     p_create.set_defaults(func=cmd_create_task)
 
+    p_sts = sub.add_parser("set-task-status", help="Transition task lifecycle status")
+    p_sts.add_argument("--task-id", required=True)
+    p_sts.add_argument("--status", required=True, choices=[s.value for s in TaskStatus])
+    p_sts.add_argument("--blocked-reason", default=None)
+    p_sts.set_defaults(func=cmd_set_task_status)
+
     p_val = sub.add_parser("validate-task", help="Validate a task file or stored task")
     p_val.add_argument("--task-id")
     p_val.add_argument("--file")
@@ -374,11 +690,67 @@ def build_parser() -> argparse.ArgumentParser:
     p_ctx.add_argument("--output")
     p_ctx.set_defaults(func=cmd_build_context)
 
-    p_hand = sub.add_parser("prepare-handoff", help="Prepare manual adapter handoff")
+    p_hand = sub.add_parser("prepare-handoff", help="Prepare role-specific manual handoff")
     p_hand.add_argument("--task-id", required=True)
     p_hand.add_argument("--role", choices=["claude", "cursor", "codex"])
     p_hand.add_argument("--output")
+    p_hand.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Skip clean-worktree check (tests/debug only)",
+    )
     p_hand.set_defaults(func=cmd_prepare_handoff)
+
+    p_cp = sub.add_parser("create-plan", help="Create a draft plan for a ready task")
+    p_cp.add_argument("--task-id", required=True)
+    p_cp.add_argument("--plan-id", required=True)
+    p_cp.add_argument("--planner-agent", required=True)
+    p_cp.add_argument("--objective")
+    p_cp.add_argument("--starting-commit")
+    p_cp.add_argument("--from-file")
+    p_cp.add_argument("--assumption", action="append", default=[])
+    p_cp.add_argument("--scope", action="append", default=[])
+    p_cp.add_argument("--prohibited-action", action="append", default=[])
+    p_cp.add_argument("--file-expected", action="append", default=[])
+    p_cp.add_argument("--step", action="append", default=[])
+    p_cp.add_argument("--test", action="append", default=[])
+    p_cp.add_argument("--rollback", action="append", default=[])
+    p_cp.add_argument("--risk", action="append", default=[])
+    p_cp.add_argument("--question", action="append", default=[])
+    p_cp.add_argument("--approval-requirement", default="human")
+    p_cp.add_argument("--risk-level", choices=[r.value for r in RiskLevel])
+    p_cp.set_defaults(func=cmd_create_plan)
+
+    p_vp = sub.add_parser("validate-plan", help="Validate a plan file or stored plan")
+    p_vp.add_argument("--plan-id")
+    p_vp.add_argument("--file")
+    p_vp.set_defaults(func=cmd_validate_plan)
+
+    p_sp = sub.add_parser("submit-plan", help="Submit plan for approval")
+    p_sp.add_argument("--plan-id", required=True)
+    p_sp.set_defaults(func=cmd_submit_plan)
+
+    p_ap = sub.add_parser("approve-plan", help="Approve a submitted plan")
+    p_ap.add_argument("--plan-id", required=True)
+    p_ap.add_argument("--approver", required=True)
+    p_ap.add_argument("--note", default=None)
+    p_ap.set_defaults(func=cmd_approve_plan)
+
+    p_rp = sub.add_parser("reject-plan", help="Reject a plan")
+    p_rp.add_argument("--plan-id", required=True)
+    p_rp.add_argument("--rejected-by", required=True)
+    p_rp.add_argument("--reason", required=True)
+    p_rp.set_defaults(func=cmd_reject_plan)
+
+    p_shp = sub.add_parser("show-plan", help="Show plan details")
+    p_shp.add_argument("--plan-id", required=True)
+    p_shp.add_argument("--json", action="store_true")
+    p_shp.set_defaults(func=cmd_show_plan)
+
+    p_up = sub.add_parser("update-plan", help="Update plan from YAML (may invalidate approval)")
+    p_up.add_argument("--plan-id", required=True)
+    p_up.add_argument("--file", required=True)
+    p_up.set_defaults(func=cmd_update_plan)
 
     p_rep = sub.add_parser("record-report", help="Record implementation or review report")
     p_rep.add_argument("--kind", required=True, choices=["implementation", "review"])
@@ -394,8 +766,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_rep.add_argument("--reviewer-role", choices=[m.value for m in ModelRole])
     p_rep.add_argument("--verdict", choices=[v.value for v in ReviewVerdict])
     p_rep.add_argument("--finding", action="append", default=[])
+    p_rep.add_argument("--confirmed-finding", action="append", default=[])
+    p_rep.add_argument("--rejected-finding", action="append", default=[])
     p_rep.add_argument("--notes", default=None)
     p_rep.set_defaults(func=cmd_record_report)
+
+    p_rr = sub.add_parser("record-repair-round", help="Record a repair round")
+    p_rr.add_argument("--task-id", required=True)
+    p_rr.add_argument("--round-number", type=int, default=0)
+    p_rr.add_argument("--reason", required=True)
+    p_rr.add_argument("--finding-addressed", action="append", default=[])
+    p_rr.add_argument("--file-changed", action="append", default=[])
+    p_rr.add_argument("--test-rerun", action="append", default=[])
+    p_rr.add_argument("--result", default="pending")
+    p_rr.add_argument("--scope-changed", action="store_true")
+    p_rr.add_argument("--reapproval-required", action="store_true")
+    p_rr.set_defaults(func=cmd_record_repair_round)
 
     p_rev = sub.add_parser("review-status", help="Show latest review status for a task")
     p_rev.add_argument("--task-id", required=True)
@@ -421,6 +807,20 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(f"create-task requires --from-file or {', '.join('--' + m for m in missing)}")
     if args.command == "validate-task" and not args.task_id and not args.file:
         parser.error("validate-task requires --task-id or --file")
+    if args.command == "validate-plan" and not args.plan_id and not args.file:
+        parser.error("validate-plan requires --plan-id or --file")
+    if args.command == "create-plan" and not args.from_file:
+        missing = []
+        if not args.objective:
+            missing.append("--objective")
+        if not args.step:
+            missing.append("--step")
+        if not args.test:
+            missing.append("--test")
+        if not args.file_expected:
+            missing.append("--file-expected")
+        if missing:
+            parser.error("create-plan requires --from-file or " + ", ".join(missing))
     if args.command == "record-report":
         if args.kind == "implementation":
             if not args.summary or not args.outcome:

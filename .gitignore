@@ -40,6 +40,16 @@ workspace/decisions/*
 !workspace/decisions/.gitkeep
 workspace/behavioral_reports/*
 !workspace/behavioral_reports/.gitkeep
+workspace/plans/*
+!workspace/plans/.gitkeep
+workspace/repair_rounds/*
+!workspace/repair_rounds/.gitkeep
+workspace/reports/**/*
+!workspace/reports/**/.gitkeep
+workspace/handoffs/*
+!workspace/handoffs/.gitkeep
+workspace/context/*
+!workspace/context/.gitkeep
 
 # Local project registry (example stays tracked)
 config/projects.yaml

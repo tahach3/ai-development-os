@@ -1,40 +1,49 @@
-# Architecture (Round 1)
+# Architecture (Round 2)
 
 ## Purpose
 
-AI Development OS is a **local control plane** for structured software tasks. It does not call model APIs. It validates tasks, routes them deterministically, builds minimal context packets, and writes **manual handoff** files for Claude, Cursor, or Codex.
+AI Development OS is a **local control plane** for structured software tasks. It does not call model APIs. It validates tasks, routes them deterministically, builds minimal context packets, manages **plan approval gates**, and writes **manual handoff** files for Claude, Cursor, or Codex.
+
+## Inspired by (patterns only — no copied code)
+
+See `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`.
+
+| Pattern | Inspiration | Round 2 status |
+| --- | --- | --- |
+| Approved-spec / plan gate before implementation | CC-SDD | Implemented independently |
+| Lifecycle FSM + audit fields (`approved_by`, starting commit, blocked/rejected/superseded) | Liza | Implemented independently |
+| Max repair rounds → blocked / human review | Ralphex | Implemented independently |
+| Worktrees / sessions | Agent Orchestrator | Deferred to Round 3 |
+| Real provider CLI adapters | MCO | Deferred to Round 3 |
+
+These notes document conceptual inspiration only. **No compatibility is claimed** unless a feature is implemented and tested here.
 
 ## Layers
 
-1. **Config** (`config/`) — routing rules, risk levels, token budgets, project registry example.
+1. **Config** (`config/`) — routing rules, risk levels, token budgets, repair-round limits, project registry.
 2. **Schemas** (`schemas/`) — JSON schemas documenting task/plan/report contracts.
-3. **Domain** (`src/ai_dev_os/models.py`, `validation.py`) — dataclasses, enums, lifecycle FSM.
-4. **Services** — registry, routing, context builder, git inspect, task/report stores, behavioral metrics.
-5. **Adapters** — Claude/Cursor/Codex placeholders that only write handoff files.
+3. **Domain** (`models.py`, `validation.py`, `fingerprints.py`) — dataclasses, enums, lifecycle FSM, content hashes.
+4. **Services** — registry, routing, context, git inspect, task/plan/report/repair stores, approval, gates, handoffs, behavioral metrics.
+5. **Adapters / handoffs** — Claude/Cursor/Codex packets with `automation_status: manual_handoff_required`.
 6. **CLI** — operator interface for the above.
+7. **Demo** — `demo_projects/calculator-demo` synthetic lifecycle target (not Equitify).
 
-## Data flow
+## Data flow (Round 2)
 
 ```
-register-project → create-task → validate-task → route-task
-        → build-context / prepare-handoff (manual)
-        → record-report → review-status / behavioral-report
+register-project → create-task → set-task-status(ready_for_planning) → route-task
+  → create-plan → validate-plan → submit-plan → approve-plan
+  → build-context / prepare-handoff (cursor, approved plan only)
+  → record-report (implementation) → prepare-handoff (codex review)
+  → record-report (review) → complete → behavioral-report
 ```
 
-## Lifecycle FSM
+## Non-goals (still)
 
-`draft → ready_for_planning → planned → approved_for_implementation → implementing → validating → ready_for_review → review_failed|review_passed → ready_to_commit → completed`
-
-Also: `blocked`, `cancelled`. Illegal jumps (e.g. `draft → completed`) are rejected.
-
-## Determinism
-
-Routing and budget band selection are pure functions of task fields + YAML config. Token usage is recorded as `measured|estimated|unavailable` and is **never fabricated**.
-
-## Non-goals (Round 1)
-
-- Network I/O from the product
+- Network I/O / paid LLM APIs from the product
 - Auto-execution of model output
-- Dashboards / browser automation
+- Dashboards / browser automation / cloud workers
 - Equitify connection
+- Worktrees (Round 3)
+- Real agent CLI adapters (Round 3)
 - Self-improving rule rewrites

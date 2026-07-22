@@ -19,7 +19,7 @@
     },
     "verdict": {
       "type": "string",
-      "enum": ["pass", "fail", "needs_changes"]
+      "enum": ["pass", "pass_with_notes", "changes_required", "blocked"]
     },
     "findings": {
       "type": "array",
@@ -38,7 +38,19 @@
       },
       "default": []
     },
+    "confirmed_findings": {
+      "type": "array",
+      "items": { "$ref": "#/properties/findings/items" },
+      "default": []
+    },
+    "rejected_findings": {
+      "type": "array",
+      "items": { "$ref": "#/properties/findings/items" },
+      "default": []
+    },
     "notes": { "type": ["string", "null"] },
-    "created_at": { "type": "string" }
+    "created_at": { "type": "string" },
+    "implementation_report_fingerprint": { "type": ["string", "null"] },
+    "content_fingerprint": { "type": ["string", "null"] }
   }
 }
