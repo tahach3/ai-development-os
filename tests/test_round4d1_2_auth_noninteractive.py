@@ -88,13 +88,16 @@ def _write_fake_cli(
         return script
 
     script = path
-    help_line = "\\n".join(help_bits)
     parts = [
         "#!/bin/sh",
         'case "$1" in',
         f'  --version|version) echo "fake-cli {version}"; exit 0 ;;',
-        f'  --help|help) printf \'%s\\n\' "{help_line}"; exit 0 ;;',
+        "  --help|help)",
     ]
+    for bit in help_bits:
+        safe = bit.replace('"', '\\"')
+        parts.append(f'    echo "{safe}"')
+    parts.append("    exit 0 ;;")
     if auth == "yes":
         parts.append('  auth) if [ "$2" = "status" ]; then echo "logged in as user"; exit 0; fi ;;')
     elif auth == "no":
@@ -326,10 +329,16 @@ def test_host_system_verdict_priority(env):
         enable_get_command=False,
         provider_overrides={
             "claude_code": {
+                "authentication_status": AuthenticationStatus.AUTHENTICATED_VERIFIED.value,
+                "authentication_verification_method": "auth_status_command",
                 "synthetic_noninteractive_verified": True,
+                "noninteractive_status": NoninteractiveStatus.SUPPORTED_VERIFIED.value,
             },
             "codex": {
+                "authentication_status": AuthenticationStatus.AUTHENTICATED_VERIFIED.value,
+                "authentication_verification_method": "auth_status_command",
                 "synthetic_noninteractive_verified": True,
+                "noninteractive_status": NoninteractiveStatus.SUPPORTED_VERIFIED.value,
             },
         },
         verify_noninteractive_contract=True,
@@ -343,7 +352,7 @@ def test_host_system_verdict_priority(env):
         HostSystemVerdict.NO_INDEPENDENT_REVIEWER.value,
         HostSystemVerdict.PROVIDER_NOT_ELIGIBLE.value,
     )
-    # With verified auth + synthetic NI, expect live_smoke_ready*
+    # With verified auth + synthetic NI overrides, expect live_smoke_ready*
     assert bundle.host_system_verdict.startswith("live_smoke_ready")
 
 
