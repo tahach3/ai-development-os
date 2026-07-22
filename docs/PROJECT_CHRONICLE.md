@@ -274,6 +274,14 @@ Still explicitly out of scope unless re-approved later:
 
 Source: `docs/ROADMAP.md`.
 
+### Phase A docs — master integration blueprint (documentation only)
+
+- Added `docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md` as the architectural source of truth for future AI OS integration decisions
+- Aligned `docs/MODEL_ROLES.md` so AI Development OS remains controller/safety authority; Claude plans; Cursor implements; Codex/GPT independently reviews; Cursor three-model workflow is a client (no separate task/approval/routing/memory authority)
+- Light cross-links in README, architecture, roadmap, OSS assessment, and this chronicle
+- **No runtime behavior changed**; no dependencies or package versions changed
+- Implemented baseline remains **Round 4A**, package **0.6.0**; the blueprint defines future direction only
+
 ---
 
 ## 11. Equitify is not connected
@@ -303,7 +311,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ROADMAP.md` | Round sequencing |
 | `docs/SECURITY_MODEL.md` | Prohibitions and trust boundary |
 | `docs/ZERO_CLICK_LIMITATIONS.md` | What stays human |
-| `docs/MODEL_ROLES.md` | Claude / Cursor / Codex roles |
+| `docs/MODEL_ROLES.md` | Claude / Cursor / Codex roles; OS as platform authority |
+| `docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md` | Future AI OS integration master blueprint (direction only) |
 | `exports/AI_Development_OS_Project_Chronicle.md` | Downloadable chronicle copy |
 
 ---

@@ -48,6 +48,10 @@ Local CI, quality gates, and pull-request validation foundation:
 - Equitify connection after the exact user command
 - Any automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration + local CI
 
+## Longer-term vision (not implementation status)
+
+Completed and currently approved rounds above remain authoritative for **what is implemented**. Blueprint Phases A–I in [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) define the longer-term vision beyond Round 4A and future Round 4B+ work. Each future implementation round requires separate approval and planning.
+
 ## Explicitly deferred
 
 - LangChain / CrewAI / AutoGen

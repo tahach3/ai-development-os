@@ -49,6 +49,10 @@ register-project → create-task → … → approve-plan
 - Orchestration artifacts remain schema `3c.1`
 - CI / PR validation artifacts use schema `4a.1`
 
+## Future platform direction
+
+The current implemented architecture remains **Round 4A**. [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines the approved future platform direction; blueprint features are not implemented unless explicitly recorded in later rounds.
+
 ## Non-goals (still)
 
 - Network I/O / paid LLM APIs from the product by default

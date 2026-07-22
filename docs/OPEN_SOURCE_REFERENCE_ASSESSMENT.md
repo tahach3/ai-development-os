@@ -6,6 +6,8 @@ Method: public GitHub metadata (`gh api`), README/docs pages, and published docu
 
 Adoption rule for Round 2: **architectural patterns and concepts only**, independently re-implemented in Python inside `ai-development-os`.
 
+This document remains the record of the Round 2 reference review. Integration decisions and the future reuse strategy are extended or superseded by [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md).
+
 ---
 
 ## 1. AgentWrapper/agent-orchestrator

@@ -47,3 +47,5 @@ ai-dev-os validate-change --base HEAD~1
 ## Docs
 
 See `docs/` for architecture, Round 3A/3B/3C/4A designs, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.6.0**.
+
+- [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) — master architectural direction for future AI OS integration, shared memory, provider routing, plugins, and open-source component decisions (not yet implemented).
