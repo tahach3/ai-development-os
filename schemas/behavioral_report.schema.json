@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/behavioral_report.schema.json",
+  "title": "BehavioralReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generated_at",
+    "task_count",
+    "status_counts",
+    "routing_counts",
+    "recommendations"
+  ],
+  "properties": {
+    "generated_at": { "type": "string" },
+    "task_count": { "type": "integer", "minimum": 0 },
+    "status_counts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" }
+    },
+    "routing_counts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" }
+    },
+    "risk_counts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" }
+    },
+    "avg_complexity_band": { "type": ["string", "null"] },
+    "recommendations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "auto_rewrite_rules": {
+      "type": "boolean",
+      "const": false,
+      "description": "Must remain false; recommendations only."
+    }
+  }
+}

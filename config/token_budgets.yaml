@@ -1,0 +1,30 @@
+# Token budget bands. Usage may be measured, estimated, or unavailable.
+# Never fabricate usage numbers.
+
+budgets:
+  small:
+    max_input_tokens: 4000
+    max_output_tokens: 1500
+    description: "Narrow fix or single-file change."
+  normal:
+    max_input_tokens: 12000
+    max_output_tokens: 4000
+    description: "Typical multi-file feature or bugfix."
+  complex:
+    max_input_tokens: 32000
+    max_output_tokens: 8000
+    description: "Cross-module design or large investigation."
+  high_risk:
+    max_input_tokens: 48000
+    max_output_tokens: 10000
+    description: "High/critical risk work needing fuller context and review."
+
+usage_modes:
+  - measured
+  - estimated
+  - unavailable
+
+rules:
+  - never_fabricate_usage: true
+  - if_unavailable_record_as: unavailable
+  - prefer_measured_when_adapter_provides_counts: true

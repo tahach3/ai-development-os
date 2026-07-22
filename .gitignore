@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Testing / tooling
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Local workspace artifacts (keep directory placeholders)
+workspace/active/*
+!workspace/active/.gitkeep
+workspace/completed/*
+!workspace/completed/.gitkeep
+workspace/decisions/*
+!workspace/decisions/.gitkeep
+workspace/behavioral_reports/*
+!workspace/behavioral_reports/.gitkeep
+
+# Local project registry (example stays tracked)
+config/projects.yaml
+
+# Handoff / generated packets
+*.handoff.md
+context_packets/

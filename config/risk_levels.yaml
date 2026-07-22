@@ -1,0 +1,29 @@
+# Risk classification for tasks and gates.
+# High/critical risk must never be auto-approved.
+
+levels:
+  low:
+    description: "Localized, reversible change with clear rollback."
+    requires_explicit_approval: false
+    auto_approve_forbidden: false
+  medium:
+    description: "Multi-file or behavior-affecting change with moderate blast radius."
+    requires_explicit_approval: true
+    auto_approve_forbidden: false
+  high:
+    description: "Security, data integrity, public API, or hard-to-rollback change."
+    requires_explicit_approval: true
+    auto_approve_forbidden: true
+  critical:
+    description: "Production-destructive, auth weakening, secret handling, or irreversible migration."
+    requires_explicit_approval: true
+    auto_approve_forbidden: true
+
+prohibited_without_user_command:
+  - equitify_integration
+  - paid_llm_api_calls
+  - executing_generated_code
+  - auto_approve_high_risk
+  - auto_activate_self_improvement
+  - reading_env_secrets
+  - storing_api_keys

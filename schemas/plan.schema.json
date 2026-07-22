@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/plan.schema.json",
+  "title": "Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "summary", "steps", "risks", "created_at"],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["order", "description"],
+        "properties": {
+          "order": { "type": "integer", "minimum": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "role": {
+            "type": ["string", "null"],
+            "enum": ["claude", "cursor", "codex", null]
+          }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "out_of_scope": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "created_at": { "type": "string" }
+  }
+}

@@ -1,0 +1,47 @@
+# Deterministic routing preferences for Round 1.
+# No paid APIs; adapters produce manual handoff packets only.
+
+roles:
+  claude:
+    strengths:
+      - large_multi_system
+      - deep_investigation
+      - long_autonomous
+      - architecture
+      - complex_planning
+    default_for_complexity:
+      - complex
+      - high_risk
+  cursor:
+    strengths:
+      - targeted_edits
+      - ui
+      - navigation
+      - diff_review
+      - verification
+      - small_fixes
+    default_for_complexity:
+      - small
+      - normal
+  codex:
+    strengths:
+      - second_opinion
+      - independent_review
+      - adversarial_check
+    default_for_complexity: []
+
+routing_rules:
+  - if_risk_in: [high, critical]
+    prefer: claude
+    reason: "High/critical risk work needs deep planning and explicit gates."
+  - if_complexity_in: [complex, high_risk]
+    prefer: claude
+    reason: "Complex and high-risk tasks favor long-horizon investigation."
+  - if_task_type_in: [review, independent_review]
+    prefer: codex
+    reason: "Independent review prefers a second-opinion model role."
+  - if_task_type_in: [ui, small_fix, verification]
+    prefer: cursor
+    reason: "UI and small fixes favor Cursor editing workflows."
+  - default: cursor
+    reason: "Default daily editing and targeted implementation goes to Cursor."

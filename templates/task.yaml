@@ -1,0 +1,17 @@
+id: ""
+title: ""
+description: ""
+project_id: ""
+task_type: feature
+complexity: normal
+risk_level: medium
+status: draft
+acceptance_criteria: []
+allowed_paths: []
+prohibited_paths: []
+assigned_role: null
+routing_explanation: null
+token_budget_band: null
+parent_task_id: null
+blocked_reason: null
+metadata: {}

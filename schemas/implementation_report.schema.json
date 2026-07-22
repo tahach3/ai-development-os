@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/implementation_report.schema.json",
+  "title": "ImplementationReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "summary",
+    "files_changed",
+    "tests_run",
+    "outcome",
+    "created_at"
+  ],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "files_changed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "tests_run": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "partial", "failed", "blocked"]
+    },
+    "token_usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["measured", "estimated", "unavailable"]
+        },
+        "input_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "output_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "notes": { "type": ["string", "null"] },
+    "created_at": { "type": "string" }
+  }
+}

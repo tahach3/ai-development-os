@@ -1,0 +1,5 @@
+# Example project registry. Copy to projects.yaml and register real projects.
+# Equitify must NOT be registered until the user explicitly says:
+# "Connect the AI Development Operating System to Equitify."
+
+projects: []
