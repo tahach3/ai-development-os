@@ -4,11 +4,12 @@
 **Scope:** Implementation-ready design for project-scoped shared memory authority, classes, approval lifecycle, retrieval, retention, security, SQLite prototype boundaries, and conceptual API  
 **Not in scope:** Schema files, databases, migrations, memory services, CLI commands, dependencies, packages, providers, runtime configuration, or any persistence implementation
 
-**Implemented baseline (unchanged):** Round 4A, package **`0.6.0`**  
+**Implemented baseline (unchanged):** Round 4B closeout, package **`0.6.0`**
+
 **Architectural source of truth:** [`AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) §7 (Shared Memory Design), plus related isolation / audit / three-model client rules  
 **Related current docs:** [`ARCHITECTURE.md`](ARCHITECTURE.md), [`MODEL_ROLES.md`](MODEL_ROLES.md), [`ROADMAP.md`](ROADMAP.md), [`SECURITY_MODEL.md`](SECURITY_MODEL.md), [`PROJECT_BOUNDARIES.md`](PROJECT_BOUNDARIES.md)
 
-**Honest status:** No shared-memory implementation exists yet. Round 4A remains the shipped capability set. This document prepares Phase B implementation; it does not authorize code, SQLite files, or new dependencies.
+**Honest status:** No shared-memory implementation exists yet. Round 4B / package **0.6.0** remains the shipped capability set. This document prepares Phase B implementation; it does not authorize code, SQLite files, or new dependencies.
 
 ---
 

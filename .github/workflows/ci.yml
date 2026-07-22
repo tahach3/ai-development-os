@@ -1,11 +1,13 @@
-# Round 4A — Local CI parity workflow (definition only; not executed/pushed in Round 4A).
+# Round 4A — Local CI parity workflow definition.
+# Round 4B — Validated on private remote tahach3/ai-development-os
+#   (first success: Actions run 29930178622). Permissions unchanged.
 #
 # Supply-chain note: actions use version tags (not immutable commit SHAs).
 # Residual risk: a tag could move. Prefer SHA pins in a later round when hashes are verified.
 #
 # Permissions are least-privilege (contents: read only). No repository secrets.
 # No provider credentials. No live model calls. No deploy. No automatic commits/merge.
-# No artifact upload in Round 4A (would require broader token permissions).
+# No artifact upload (would require broader token permissions).
 
 name: ci
 

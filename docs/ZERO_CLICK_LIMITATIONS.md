@@ -11,6 +11,7 @@ This OS is **not** zero-click automation.
 - Round 3B provider **discovery**, **preview**, and **simulated** fixture execution (when explicitly enabled)
 - Round 3C **bounded** simulated orchestration steps (until a safety boundary)
 - Round 4A **local CI stages** and **static change validation** when an operator runs `ci-check` / `validate-change`
+- Round 4B **private remote GitHub Actions** for the fixed workflow on `push` / `pull_request` / `workflow_dispatch` (same least-privilege permissions; no secrets; no live providers)
 
 ## What always requires a human
 
@@ -24,7 +25,7 @@ This OS is **not** zero-click automation.
 - Resolving orchestration **stalemate** / repair-limit / blocked states
 - Creating a new orchestration after cancellation (cancelled cannot silently resume)
 - Approving safety-critical CI/policy/workflow changes flagged by `validate-change`
-- Enabling remote GitHub Actions execution (workflow is defined in Round 4A but **not** pushed or run)
+- Broadening GitHub Actions permissions, adding repository secrets, live provider CI steps, deploy, or auto-merge (Round 4B validated remote CI only under `contents: read`)
 
 ## Adapter contracts
 

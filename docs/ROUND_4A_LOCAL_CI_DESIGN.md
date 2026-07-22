@@ -1,13 +1,27 @@
 # Round 4A — Local CI, Quality Gates, and Pull-Request Validation Foundation
 
-**Status:** Approved for implementation in this round  
-**Scope:** Deterministic local CI engine, normalized CI/PR result schemas, dependency-policy (not vulnerability DB), secret/artifact gates, minimal GitHub Actions **definition** (not executed/pushed), sanitized behavioral CI aggregates  
-**Not in scope:** Live provider calls, paid APIs, vulnerability database queries, auto-merge/push/deploy, Equitify, autonomous code-review agents, repository secrets, remotes/push during this round
+**Status:** Round 4A complete; Round 4B remote validation complete (documentation closeout)
+**Scope:** Deterministic local CI engine, normalized CI/PR result schemas, dependency-policy (not vulnerability DB), secret/artifact gates, minimal GitHub Actions definition, sanitized behavioral CI aggregates
+
+**Not in scope (still):** Live provider calls, paid APIs, vulnerability database queries, auto-merge/push/deploy, Equitify, autonomous code-review agents, repository secrets, workflow permission expansion
 
 **Verified baseline commit (pre-implementation):** `734b8c8235b01e9297a25df089cdfd542d9da6aa`  
 (Round 3C complete; package was `0.5.0`; baseline tests 111 passed / 1 skipped; remotes unmodified / none required)
 
-**Package version target:** `0.6.0` (schema/policy `4a.1`; prior round schemas preserved)
+**Package version target:** `0.6.0` (schema/policy `4a.1`; prior round schemas preserved) — **unchanged through Round 4B**
+
+### Round 4B remote validation evidence
+
+| Item | Value |
+| --- | --- |
+| Private repo | `tahach3/ai-development-os` |
+| First successful remote CI run | [`29930178622`](https://github.com/tahach3/ai-development-os/actions/runs/29930178622) |
+| Conclusion | `success` |
+| Head SHA at first success | `a01f6725d415977c982fd3c9ad524ef5656ddce3` |
+| Workflow permissions | `contents: read` only (unchanged) |
+| Secrets / live providers / deploy / merge | None |
+| Equitify | Disconnected |
+| Next planned development round | High-quality reporting system upgrade |
 
 ---
 
@@ -208,7 +222,7 @@ Single workflow `.github/workflows/ci.yml`:
 - Triggers: `pull_request`, `push` to `master`/`main`, `workflow_dispatch`
 - Jobs: checkout → setup-python (3.11+) → `pip install -e ".[dev]"` → `pytest` → `ai-dev-os ci-check` (or `python -m ai_dev_os.cli ci-check`) → `git diff --check`
 - Official actions only; version **tags** documented; commit SHA pins deferred (supply-chain residual risk recorded)
-- **Not executed or pushed in Round 4A**
+- **Not executed or pushed in Round 4A**; **Round 4B** validated private remote execution (first success run `29930178622` on `tahach3/ai-development-os`) without changing permissions or adding secrets
 
 ---
 
@@ -280,4 +294,6 @@ Categories: successful local CI (temp repo); stage ordering; serialization; fail
 
 ## 26. Explicitly deferred functionality
 
-Round 4B+ (not this round): GitHub workflow execution on remote; action SHA pinning verification; vulnerability DB scanning; coverage/quality gates beyond pytest; auto-fix CI; required status checks enforcement; deployment; auto-merge; live provider CI smoke; Equitify; paid API CI; mutable caching of secrets; autonomous review bots.
+**Round 4B complete:** private remote GitHub workflow execution validated (run `29930178622`). Permissions/secrets/live/deploy posture unchanged.
+
+Still deferred (later rounds only with explicit approval): action SHA pinning verification; vulnerability DB scanning; coverage/quality gates beyond pytest; auto-fix CI; required status checks enforcement; deployment; auto-merge; live provider CI smoke; Equitify; paid API CI; mutable caching of secrets; autonomous review bots; high-quality reporting system upgrade (next planned development round).

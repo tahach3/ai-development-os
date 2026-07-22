@@ -2,9 +2,9 @@
 
 **Status:** Implementation decisions only (Phase B2)
 **Scope:** SQLite prototype schema, lifecycle policy, retrieval/determinism, adapter/module boundaries, API contracts, migrations/config, test strategy, and B3.x checkpoints
-**Not in scope:** Python memory runtime, SQLite files, migrations on disk, ORM, dependencies, CLI commands, providers, embeddings, FTS5 code, Live model calls, Equitify, Round 4B, package version changes
+**Not in scope:** Python memory runtime, SQLite files, migrations on disk, ORM, dependencies, CLI commands, providers, embeddings, FTS5 code, Live model calls, Equitify, package version changes
 
-**Implemented baseline (unchanged):** Round 4A, package **`0.6.0`** · HEAD at plan authorship: `382eb8a`
+**Implemented baseline (unchanged):** Round 4B closeout, package **`0.6.0`** · HEAD at plan authorship: `382eb8a`
 **Principles source of truth:** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) (Phase B1)
 **Architectural direction:** [`AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) §7 / Phase B
 **Related:** [`ARCHITECTURE.md`](ARCHITECTURE.md), [`MODEL_ROLES.md`](MODEL_ROLES.md), [`ROADMAP.md`](ROADMAP.md), [`SECURITY_MODEL.md`](SECURITY_MODEL.md)
@@ -675,7 +675,7 @@ Each checkpoint is separately approvable. Rollback = revert checkpoint commit(s)
 | --- | --- |
 | Files | ARCHITECTURE/ROADMAP/chronicle honesty; version bump **only if approved** |
 | Acceptance | Docs do not claim features beyond tests; Round 4A still baseline until bump approved |
-| Prohibited | Equitify, Round 4B, LangGraph, LiteLLM |
+| Prohibited | Equitify, LangGraph, LiteLLM |
 
 ---
 
@@ -715,7 +715,7 @@ Prototype is acceptable when:
 | Confidence scoring formula beyond evidence_strength | Deterministic order first |
 | Full transcript / CoT storage | Prohibited by design |
 | Mem0/Graphiti/Neo4j/Redis/pgvector | Blueprint non-goals for Phase B |
-| Round 4B / Equitify / LiteLLM / LangGraph | Separate tracks |
+| Round 4B complete / Equitify / LiteLLM / LangGraph | Separate tracks; memory work does not reopen CI permission or provider scope |
 
 ---
 

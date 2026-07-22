@@ -1,8 +1,8 @@
-# Architecture (Round 4A)
+# Architecture (Round 4B)
 
 ## Purpose
 
-AI Development OS is a **local control plane** for structured software tasks. It does not call paid model APIs by default. It validates tasks, routes them deterministically, builds minimal context packets, manages **plan approval gates**, writes **manual handoff** files, runs **allowlisted local pytest** in isolated worktrees (Round 3A), exposes **controlled provider CLI adapters** (Round 3B), runs **bounded simulated orchestration** (Round 3C), and (Round 4A) provides **local CI quality gates** plus **pull-request / change validation** with a GitHub Actions workflow **definition** (not executed in this round).
+AI Development OS is a **local control plane** for structured software tasks. It does not call paid model APIs by default. It validates tasks, routes them deterministically, builds minimal context packets, manages **plan approval gates**, writes **manual handoff** files, runs **allowlisted local pytest** in isolated worktrees (Round 3A), exposes **controlled provider CLI adapters** (Round 3B), runs **bounded simulated orchestration** (Round 3C), provides **local CI quality gates** plus **pull-request / change validation** (Round 4A), and has **validated private remote GitHub Actions** on `tahach3/ai-development-os` (Round 4B — first success run `29930178622`).
 
 ## Inspired by (patterns only — no copied code)
 
@@ -17,6 +17,7 @@ See `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`.
 | Provider CLI adapters | MCO | Round 3B (live not authorized) |
 | Bounded impl/test/review/repair loop + stalemate | Agent Orchestrator / Ralphex concepts | Round 3C (simulated) |
 | Local CI / PR validation gates | — | **Round 4A** |
+| Private remote CI validation | — | **Round 4B** (run `29930178622`) |
 | Allowlisted local pytest exec | — | Round 3A |
 
 ## Layers
@@ -27,7 +28,7 @@ See `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`.
 4. **Services** — registry, routing, context, git inspect, stores, approval, sessions/worktrees/safe_exec, provider lane, orchestration engine, **CI engine / validate-change / dependency-policy / secret scan**.
 5. **Adapters** — manual handoff (`adapters/`) **and** provider CLI lane (`providers/`).
 6. **CLI** — operator interface including `ci-check` and `validate-change`.
-7. **CI definition** — `.github/workflows/ci.yml` (contents: read; not pushed/executed in Round 4A).
+7. **CI definition + remote parity** — `.github/workflows/ci.yml` with `permissions: contents: read` only; Round 4B validated private remote execution (no secrets, no live providers, no deploy/merge).
 8. **Demo** — `demo_projects/calculator-demo` only (not Equitify).
 
 ## Data flow
@@ -51,9 +52,9 @@ register-project → create-task → … → approve-plan
 
 ## Future platform direction
 
-The current implemented architecture remains **Round 4A**. [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines the approved future platform direction; blueprint features are not implemented unless explicitly recorded in later rounds.
+The current implemented architecture remains **Round 4A local CI + Round 4B private remote validation** (package **0.6.0**). [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines the approved future platform direction; blueprint features are not implemented unless explicitly recorded in later rounds. **Next planned development round:** high-quality reporting system upgrade (separate approval).
 
-Phase B1 shared-memory design (not implemented): [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md). Phase B2 implementation decisions only: [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — no memory runtime yet. Package **0.6.0** / Round 4A remains the shipped baseline; no memory store, schema files, or runtime exists yet.
+Phase B1 shared-memory design (not implemented): [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md). Phase B2 implementation decisions only: [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — no memory runtime yet. Package **0.6.0** / Round 4B remains the shipped baseline; no memory store, schema files, or runtime exists yet.
 
 ## Non-goals (still)
 
@@ -65,4 +66,4 @@ Phase B1 shared-memory design (not implemented): [`SHARED_MEMORY_DESIGN.md`](SHA
 - Self-improving rule rewrites
 - Auto-merge / auto-push / auto-deploy
 - Vulnerability database scanning (deferred; dependency-policy only)
-- Executing or pushing the GitHub workflow during Round 4A
+- Broadening workflow permissions or adding repository secrets / live provider CI steps
