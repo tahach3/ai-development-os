@@ -27,8 +27,8 @@ See `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`.
 
 1. **Config** — routing, risk, budgets, repair limits, projects, providers, orchestration, **`ci_policy.yaml`**.
 2. **Schemas** — task/plan/report + execution `3a.1` + provider `3b.1` + orchestration `3c.1` + CI/PR `4a.1` + reporting `4c.1` + provider readiness `4d1.1` + ambiguity/pin `4d1.1.1`.
-3. **Domain** — models, validation, fingerprints, orchestration models, CI models, reporting models, **provider readiness / ambiguity models**.
-4. **Services** — registry, routing, context, git inspect, stores, approval, sessions/worktrees/safe_exec, provider lane, orchestration engine, CI engine, canonical report builder/renderer/validator, **provider readiness engine + ambiguity resolver**.
+3. **Domain** — models, validation, fingerprints, orchestration models, CI models, reporting models, **provider readiness / ambiguity models**, **shared-memory domain foundations (B3.1; disabled)**.
+4. **Services** — registry, routing, context, git inspect, stores, approval, sessions/worktrees/safe_exec, provider lane, orchestration engine, CI engine, canonical report builder/renderer/validator, **provider readiness engine + ambiguity resolver** (no memory service yet).
 5. **Adapters** — manual handoff (`adapters/`) **and** provider CLI lane (`providers/`) **and** legacy report importers.
 6. **CLI** — operator interface including `ci-check`, `validate-change`, `build-report`, `render-report`, `validate-report`, `show-report`, `provider-readiness` (incl. ambiguity flags).
 7. **CI definition + remote parity** — `.github/workflows/ci.yml` with `permissions: contents: read` only; Round 4B validated private remote execution (no secrets, no live providers, no deploy/merge).
@@ -59,7 +59,7 @@ register-project → create-task → … → approve-plan
 
 The current implemented architecture is **Round 4A/4B CI + Round 4C reporting + Round 4D1 readiness + Round 4D1.1 ambiguity resolution** (package **0.8.1**). [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines longer-term platform direction; blueprint features are not implemented unless explicitly recorded in later rounds. Live provider smoke requires separate Round 4D2 authorization.
 
-Phase B1 shared-memory design (not implemented): [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md). Phase B2 implementation decisions only: [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — no memory runtime yet.
+Phase B1 shared-memory design: [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md). Phase B2 implementation decisions: [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md). **Phase B3.1** adds pure domain foundations under `src/ai_dev_os/memory/` (enums, immutable models, validation, normalization, fingerprints, auth/transitions, disabled-by-default config). No SQLite, repositories, CLI, providers, or runtime memory enablement.
 
 ## Non-goals (still)
 

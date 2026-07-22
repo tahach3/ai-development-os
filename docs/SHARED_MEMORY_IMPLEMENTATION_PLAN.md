@@ -9,7 +9,7 @@
 **Architectural direction:** [`AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) §7 / Phase B
 **Related:** [`ARCHITECTURE.md`](ARCHITECTURE.md), [`MODEL_ROLES.md`](MODEL_ROLES.md), [`ROADMAP.md`](ROADMAP.md), [`SECURITY_MODEL.md`](SECURITY_MODEL.md)
 
-**Honest status:** No shared-memory implementation exists. This document resolves Phase B1 open decisions needed to implement a local SQLite prototype in later Phase B3 checkpoints. It does not authorize code, databases, or dependency changes.
+**Honest status:** Phase B3.1 domain foundations exist under `src/ai_dev_os/memory/` (models/validation/normalization/hashing/auth; disabled by default). No SQLite runtime, migrations, repositories, services, or CLI yet. This document remains the decision source for later B3.x checkpoints.
 
 ---
 

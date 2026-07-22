@@ -350,6 +350,12 @@ Source: `docs/ROADMAP.md`.
 - Phase B2 defines **implementation decisions only**; **no memory runtime** exists yet
 - Package **0.6.0** / Round 4B closeout remains the implemented baseline (no memory runtime)
 
+### Phase B3.1 — shared-memory domain foundations
+
+- Added `src/ai_dev_os/memory/`: enums, immutable models, validation, normalization, hashing (reuses `fingerprints` + `ci_secrets`), typed errors, pure lifecycle transitions + authorization, disabled-by-default `MemoryConfig`
+- Memory remains **disabled**; no SQLite, migrations, repositories, services, CLI, providers, or runtime enablement
+- Package version unchanged at **0.8.1** (Round 4D1.1 baseline preserved); memory-specific constants use `memory.1`
+
 ---
 
 ## 11. Equitify is not connected
@@ -386,8 +392,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ZERO_CLICK_LIMITATIONS.md` | What stays human |
 | `docs/MODEL_ROLES.md` | Claude / Cursor / Codex roles; OS as platform authority |
 | `docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md` | Future AI OS integration master blueprint (direction only) |
-| `docs/SHARED_MEMORY_DESIGN.md` | Phase B1 shared-memory design only (not implemented) |
-| `docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md` | Phase B2 implementation decisions only (no memory runtime) |
+| `docs/SHARED_MEMORY_DESIGN.md` | Phase B1 shared-memory design |
+| `docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md` | Phase B2 implementation decisions; B3.1 domain foundations landed (no SQLite runtime) |
 | `exports/AI_Development_OS_Project_Chronicle.md` | Downloadable chronicle copy |
 
 ---

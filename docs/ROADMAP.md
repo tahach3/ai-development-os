@@ -101,9 +101,11 @@ Local CI, quality gates, and pull-request validation foundation:
 
 Completed rounds above remain authoritative for **what is implemented**. Blueprint Phases A–I in [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) define the longer-term vision beyond Round 4B. Each future implementation round requires separate approval and planning.
 
-**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4D1.1 / package **0.8.1** is the implemented baseline (memory still deferred).
+**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype.
 
-**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4D1.1 / package **0.8.1** remains the implemented baseline for CI + reporting + readiness.
+**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for later B3.x checkpoints.
+
+**Phase B3.1 (domain foundations only):** `src/ai_dev_os/memory/` — enums, immutable models, validation, normalization, hashing/fingerprints, typed errors, pure lifecycle/auth checks, disabled-by-default config. Package remains **0.8.1**. No SQLite, migrations, repositories, service orchestration, CLI, providers, or runtime enablement.
 
 ## Explicitly deferred
 
