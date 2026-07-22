@@ -54,6 +54,8 @@ Completed and currently approved rounds above remain authoritative for **what is
 
 **Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4A package **0.6.0** remains the implemented baseline.
 
+**Phase B2 (implementation decisions only):** [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — SQLite schema/policy/adapter plan for a future prototype. No memory runtime exists yet; Round 4A package **0.6.0** remains the implemented baseline.
+
 ## Explicitly deferred
 
 - LangChain / CrewAI / AutoGen

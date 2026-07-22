@@ -288,6 +288,12 @@ Source: `docs/ROADMAP.md`.
 - **No memory implementation**, schema, database, dependency, provider, or runtime change
 - Round 4A package **0.6.0** remains the implemented baseline
 
+### Phase B2 docs — shared memory implementation plan (documentation only)
+
+- Added [`docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md): Phase B2 SQLite schema, approval, retrieval, audit, module-boundary, and B3.x checkpoint decisions
+- Phase B2 defines **implementation decisions only**; **no memory runtime** exists yet
+- Round 4A package **0.6.0** remains the implemented baseline
+
 ---
 
 ## 11. Equitify is not connected
@@ -320,6 +326,7 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/MODEL_ROLES.md` | Claude / Cursor / Codex roles; OS as platform authority |
 | `docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md` | Future AI OS integration master blueprint (direction only) |
 | `docs/SHARED_MEMORY_DESIGN.md` | Phase B1 shared-memory design only (not implemented) |
+| `docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md` | Phase B2 implementation decisions only (no memory runtime) |
 | `exports/AI_Development_OS_Project_Chronicle.md` | Downloadable chronicle copy |
 
 ---
