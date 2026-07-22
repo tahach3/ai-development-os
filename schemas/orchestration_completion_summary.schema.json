@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/orchestration_completion_summary.schema.json",
+  "title": "CompletionSummary",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "orchestration_id",
+    "final_state"
+  ],
+  "properties": {
+    "schema_version": { "const": "3c.1" },
+    "automation_status": { "const": "simulated_orchestration" }
+  }
+}

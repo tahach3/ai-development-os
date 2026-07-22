@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/orchestration_record.schema.json",
+  "title": "OrchestrationRecord",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "orchestration_id",
+    "orchestration_policy_version",
+    "task_id",
+    "plan_id",
+    "approved_plan_fingerprint",
+    "project_id",
+    "session_id",
+    "worktree_id",
+    "starting_commit",
+    "current_state",
+    "automation_status"
+  ],
+  "properties": {
+    "schema_version": { "const": "3c.1" },
+    "current_state": {
+      "type": "string",
+      "enum": [
+        "created",
+        "ready",
+        "implementation_pending",
+        "implementation_running",
+        "implementation_result_pending_validation",
+        "testing_pending",
+        "testing_running",
+        "review_pending",
+        "review_running",
+        "repair_required",
+        "repair_pending",
+        "completed",
+        "blocked",
+        "cancelled",
+        "human_review_required"
+      ]
+    },
+    "invocation_mode": { "const": "simulated" }
+  }
+}

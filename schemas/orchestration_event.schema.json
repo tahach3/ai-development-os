@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/orchestration_event.schema.json",
+  "title": "OrchestrationEvent",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "event_id",
+    "orchestration_id",
+    "from_state",
+    "to_state",
+    "step_number",
+    "created_at"
+  ],
+  "properties": {
+    "failure_class": { "type": "string" },
+    "step_number": { "type": "integer", "minimum": 0 }
+  }
+}

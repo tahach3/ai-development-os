@@ -5,12 +5,13 @@
 - No paid LLM API keys or network model calls by default
 - No reading env secrets for automation; no auth-file / cookie / token enumeration
 - No storing API keys in repo or workspace artifacts
-- No executing generated code from adapters
+- No executing generated code from adapters or provider text
 - No auto-approve for high/critical risk
 - No auto-activate self-improvement / rule rewrite
 - No destructive Git from this OS (`reset --hard`, force-push, etc.)
 - No silent provider CLI installation
-- No live provider model execution without explicit multi-gate authorization (Round 3B validation never takes this path)
+- No live provider model execution without explicit multi-gate authorization (Round 3B/3C validation never takes this path)
+- No unbounded repair loops; stalemate requires human review
 
 ## Subprocess policy
 
@@ -27,6 +28,14 @@ Round 3B provider lane adds:
 - Provider results audited under `workspace/provider_executions/` with truncated stdout/stderr
 - Status CLI omits full private prompts (fingerprints / paths only)
 
+Round 3C orchestration adds:
+
+- Simulated-only default orchestration config (`config/orchestration.yaml`)
+- Fail-closed binding/staleness checks before every step
+- Fixture-controlled synthetic worktree mutations only (no arbitrary patch engine; provider text never executed)
+- Deterministic stalemate stop → `human_review_required` / `blocked` (no live escalate)
+- Atomic persistence for orchestration records/events
+
 ## Validation
 
 - Explicit required fields and enums
@@ -34,7 +43,8 @@ Round 3B provider lane adds:
 - Project registry gate; Equitify sentinel refusal
 - Provider request binding fingerprints; stale bindings fail closed
 - Malformed provider output cannot become impl/review/repair input
+- Orchestration schema `3c.1`; unsupported versions fail closed
 
 ## Trust boundary
 
-Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures. The OS does not pretend external tools were invoked for live model work unless a separately authorized live smoke is approved later.
+Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. The OS does not pretend external tools were invoked for live model work unless a separately authorized live smoke is approved later.

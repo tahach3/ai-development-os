@@ -98,6 +98,10 @@ class PolicyDecision(str, Enum):
 class SimulatedFixture(str, Enum):
     SUCCESS_IMPL = "success_impl"
     SUCCESS_REVIEW = "success_review"
+    SUCCESS_REVIEW_WITH_NOTES = "success_review_with_notes"
+    CHANGES_REQUIRED_REVIEW = "changes_required_review"
+    CHANGES_REQUIRED_IDENTICAL = "changes_required_identical"
+    MALFORMED_REVIEW = "malformed_review"
     PROVIDER_REJECTION = "provider_rejection"
     MALFORMED_OUTPUT = "malformed_output"
     TIMEOUT = "timeout"
@@ -107,7 +111,9 @@ class SimulatedFixture(str, Enum):
     DUPLICATE_REQUEST = "duplicate_request"
     STALE_PLAN = "stale_plan"
     STALE_COMMIT = "stale_commit"
+    STALE_CONTEXT = "stale_context"
     CANCELLED = "cancelled"
+    SCOPE_CHANGE = "scope_change"
 
 
 @dataclass
@@ -176,6 +182,7 @@ class ProviderRequest:
         return {
             "adapter_version": self.adapter_version,
             "approved_plan_fingerprint": self.approved_plan_fingerprint,
+            "attempt_key": (self.metadata or {}).get("attempt_key"),
             "context_or_handoff_fingerprint": self.context_or_handoff_fingerprint,
             "fixture_id": self.fixture_id,
             "invocation_mode": self.invocation_mode.value,

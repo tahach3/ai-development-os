@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.4.0` · **Round:** 3B
+**As of:** 2026-07-22 · **Package version:** `0.5.0` · **Round:** 3C
 
 ---
 
@@ -15,10 +15,12 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **manual-handoff** system: humans paste packets into external tools; results are recorded back via CLI.
 - A **safe local execution** lane: sessions, confined worktrees, env filtering, timeouts, output caps, audit envelopes.
 - A **provider adapter** lane: contracts, safe discovery, fail-closed config, simulated fixtures, CLI shells without live model calls in validation.
+- A **bounded orchestration** lane (Round 3C): simulated implementation → targeted tests → independent review → repair with deterministic stalemate detection.
 
 ### It is not
 
 - An autonomous agent runner or “zero-click” coding system.
+- Live multi-agent automation (Round 3C is simulation-proven only).
 - A caller of paid LLM APIs, LangChain, CrewAI, AutoGen, or cloud workers.
 - A dashboard, browser automation layer, or network-connected orchestrator.
 - An Equitify integration (see §11).
@@ -40,6 +42,7 @@ Human-oriented summary of everything shipped to date in this repository.
 | Risk | No auto-approve for high/critical risk; no auto rule rewrite / self-improvement. |
 | Scope of work | Only projects in `config/projects.yaml`; unregistered IDs refused. |
 | Provider CLIs | Round 3B: discovery/version and simulated fixtures allowed; **live model execution not authorized** in this round’s validation. |
+| Orchestration | Round 3C: simulated-only loops; bounded repair; stalemate → human review; provider text never executed. |
 
 Details: `docs/PROJECT_BOUNDARIES.md`, `docs/SECURITY_MODEL.md`, `docs/ZERO_CLICK_LIMITATIONS.md`.
 
@@ -225,12 +228,24 @@ python -m pytest -q
 - **Limitation:** live remains gated; Round 3B shells refuse live spawn; policy `assert_live_gates` still hard-stops live until a proven noninteractive provider path exists
 - Equitify was not accessed; no provider source mutation; no retry
 
+### Round 3C (done)
+
+- Design: `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md`
+- Orchestration state machine + durable records/events/round evidence (`3c.1`)
+- Binding/staleness fail-closed checks; role-separated simulated impl/review
+- Deterministic stalemate (consecutive identical evidence, no-change repair, oscillation, repeated malformed)
+- CLI: create/validate/preview/step/run/resume/show/history/stalemate/cancel
+- Synthetic calculator-demo scenarios: direct success, one repair, stalemate, repair limit
+- Package version `0.5.0`
+- Validated through simulation only; zero live provider calls; Equitify not accessed
+
 ### Deferred (explicit approval)
 
 - Separately authorized **live** local CLI model smoke (retry only with a proven noninteractive installed provider + implemented gated live path)
 - Equitify connection (connect phrase only)
 - Broader command profiles beyond pytest
-- Automation beyond manual handoff + local allowlisted exec + gated providers
+- General provider-generated patch engines
+- Automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration
 
 Still explicitly out of scope unless re-approved later:
 
@@ -261,10 +276,11 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 
 | Doc | Topic |
 | --- | --- |
-| `README.md` | Install, Round 3B quick start |
+| `README.md` | Install, Round 3C quick start |
 | `docs/ARCHITECTURE.md` | Layers and data flow |
 | `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md` | Round 3A safe execution design |
 | `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` | Round 3B provider adapter design |
+| `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md` | Round 3C bounded orchestration design |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |
 | `docs/ROADMAP.md` | Round sequencing |
@@ -285,3 +301,5 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `f1d1029` | Downloadable chronicle export |
 | `eb6aba3` | Round 3A safe sessions, worktrees, allowlisted pytest, audits |
 | `305c0d7` | Round 3B controlled provider adapters, simulated fixtures, discovery shells |
+| `87068fd` | Round 3B live smoke record: blocked_before_execution (zero live calls) |
+| *(pending)* | Round 3C bounded orchestration + deterministic stalemate detection |

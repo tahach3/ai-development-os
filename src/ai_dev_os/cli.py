@@ -47,6 +47,10 @@ from .models import (
     TokenUsage,
     TokenUsageMode,
 )
+from .orchestration_config import OrchestrationConfigError, load_orchestration_config
+from .orchestration_engine import OrchestrationEngine, OrchestrationError
+from .orchestration_models import next_allowed_orch_action
+from .orchestration_store import OrchestrationStore, OrchestrationStoreError
 from .plan_store import PlanStore
 from .project_registry import ProjectRegistry, ProjectRegistryError, example_registry_path
 from .provider_config import load_provider_config
@@ -99,6 +103,8 @@ def cmd_init(_args: argparse.Namespace) -> int:
         "workspace/repair_rounds",
         "workspace/sessions",
         "workspace/executions",
+        "workspace/orchestrations",
+        "workspace/provider_executions",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     registry_path = root / "config" / "projects.yaml"
@@ -631,6 +637,29 @@ def cmd_project_status(args: argparse.Namespace) -> int:
             print(f"      repair_round_count: {repair_count}")
             print(f"      blockers: {', '.join(blockers) if blockers else 'none'}")
             print(f"      next_allowed_action: {next_allowed_action(t, plan)}")
+            try:
+                orch_store = OrchestrationStore()
+                active_orch = orch_store.find_active_for_task(t.id)
+                if active_orch:
+                    print(f"      active_orchestration_id: {active_orch.orchestration_id}")
+                    print(f"      orch_state: {active_orch.current_state}")
+                    print(f"      orch_round: {active_orch.current_round_number}")
+                    print(f"      orch_repair_count: {active_orch.current_repair_round}")
+                    print(f"      orch_test_status: {active_orch.test_status}")
+                    print(f"      orch_review_verdict: {active_orch.review_verdict or 'none'}")
+                    print(f"      orch_progress_status: {active_orch.progress_status}")
+                    print(f"      orch_stalemate_status: {active_orch.stalemate_status}")
+                    print(
+                        f"      orch_blocker: {active_orch.stop_reason or 'none'}"
+                    )
+                    print(
+                        "      orch_next_allowed_action: "
+                        f"{next_allowed_orch_action(active_orch.state())}"
+                    )
+                else:
+                    print("      active_orchestration_id: none")
+            except Exception as exc:  # status-only
+                print(f"      orchestration: unavailable ({exc})")
         try:
             inspection = inspect_repo(project.root_path)
             print(
@@ -873,10 +902,137 @@ def cmd_cancel_provider_execution(args: argparse.Namespace) -> int:
     return 0
 
 
+def _orchestration_engine() -> OrchestrationEngine:
+    # Prefer on-disk config; fall back only for missing file with fail-closed defaults
+    # is not allowed — load must succeed for operator CLI.
+    from .provider_config import fail_closed_default_config, ProviderEntryConfig
+
+    orch_cfg = load_orchestration_config()
+    pcfg = fail_closed_default_config()
+    pcfg.providers["simulated"] = ProviderEntryConfig(
+        provider_id="simulated",
+        mode=ProviderMode.SIMULATED,
+        enabled=True,
+        allow_live=False,
+    )
+    return OrchestrationEngine(orch_config=orch_cfg, provider_config=pcfg)
+
+
+def cmd_create_orchestration(args: argparse.Namespace) -> int:
+    try:
+        engine = _orchestration_engine()
+        record = engine.create(
+            task_id=args.task_id,
+            plan_id=args.plan_id,
+            session_id=args.session_id,
+            scenario_id=args.scenario,
+            orchestration_id=args.orchestration_id,
+        )
+    except (ValidationError, OrchestrationConfigError, OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(engine.status(record.orchestration_id), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_validate_orchestration(args: argparse.Namespace) -> int:
+    try:
+        result = _orchestration_engine().validate(args.orchestration_id)
+    except (OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result.get("valid") else 1
+
+
+def cmd_preview_orchestration(args: argparse.Namespace) -> int:
+    try:
+        result = _orchestration_engine().preview(args.orchestration_id)
+    except (OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_orchestration_step(args: argparse.Namespace) -> int:
+    try:
+        engine = _orchestration_engine()
+        record = engine.step(args.orchestration_id)
+    except (ValidationError, OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(engine.status(record.orchestration_id), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_run_orchestration(args: argparse.Namespace) -> int:
+    try:
+        engine = _orchestration_engine()
+        record = engine.run_until_boundary(args.orchestration_id, max_steps=args.max_steps)
+    except (ValidationError, OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(engine.status(record.orchestration_id), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_resume_orchestration(args: argparse.Namespace) -> int:
+    try:
+        engine = _orchestration_engine()
+        record = engine.resume(args.orchestration_id)
+    except (ValidationError, OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(engine.status(record.orchestration_id), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_show_orchestration(args: argparse.Namespace) -> int:
+    try:
+        result = _orchestration_engine().status(args.orchestration_id)
+    except (OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_orchestration_history(args: argparse.Namespace) -> int:
+    try:
+        result = _orchestration_engine().history(args.orchestration_id)
+    except (OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_show_stalemate_evidence(args: argparse.Namespace) -> int:
+    try:
+        result = _orchestration_engine().stalemate_evidence(args.orchestration_id)
+    except (OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_cancel_orchestration(args: argparse.Namespace) -> int:
+    try:
+        engine = _orchestration_engine()
+        record = engine.cancel(args.orchestration_id, reason=args.reason or "operator cancel")
+    except (ValidationError, OrchestrationStoreError, KeyError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(engine.status(record.orchestration_id), indent=2, sort_keys=True))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai-dev-os",
-        description="AI Development Operating System (Round 3B)",
+        description="AI Development Operating System (Round 3C)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1164,6 +1320,64 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_cpe.add_argument("--request-id", required=True)
     p_cpe.set_defaults(func=cmd_cancel_provider_execution)
+
+    p_co = sub.add_parser(
+        "create-orchestration",
+        help="Create a bounded simulated orchestration for an approved task",
+    )
+    p_co.add_argument("--task-id", required=True)
+    p_co.add_argument("--plan-id", required=True)
+    p_co.add_argument("--session-id", required=True)
+    p_co.add_argument("--scenario", default=None, help="Built-in scenario id (simulated)")
+    p_co.add_argument("--orchestration-id", default=None)
+    p_co.set_defaults(func=cmd_create_orchestration)
+
+    p_vo = sub.add_parser("validate-orchestration", help="Validate orchestration bindings")
+    p_vo.add_argument("--orchestration-id", required=True)
+    p_vo.set_defaults(func=cmd_validate_orchestration)
+
+    p_po = sub.add_parser(
+        "preview-orchestration",
+        help="Preview next orchestration step without mutating state",
+    )
+    p_po.add_argument("--orchestration-id", required=True)
+    p_po.set_defaults(func=cmd_preview_orchestration)
+
+    p_os = sub.add_parser("orchestration-step", help="Execute one orchestration step (simulated)")
+    p_os.add_argument("--orchestration-id", required=True)
+    p_os.set_defaults(func=cmd_orchestration_step)
+
+    p_ro = sub.add_parser(
+        "run-orchestration",
+        help="Run simulated orchestration until a safety boundary",
+    )
+    p_ro.add_argument("--orchestration-id", required=True)
+    p_ro.add_argument("--max-steps", type=int, default=None)
+    p_ro.set_defaults(func=cmd_run_orchestration)
+
+    p_reso = sub.add_parser("resume-orchestration", help="Resume orchestration after revalidating bindings")
+    p_reso.add_argument("--orchestration-id", required=True)
+    p_reso.set_defaults(func=cmd_resume_orchestration)
+
+    p_sho = sub.add_parser("show-orchestration", help="Show sanitized orchestration status")
+    p_sho.add_argument("--orchestration-id", required=True)
+    p_sho.set_defaults(func=cmd_show_orchestration)
+
+    p_oh = sub.add_parser("orchestration-history", help="Show orchestration event history")
+    p_oh.add_argument("--orchestration-id", required=True)
+    p_oh.set_defaults(func=cmd_orchestration_history)
+
+    p_sse = sub.add_parser(
+        "show-stalemate-evidence",
+        help="Show deterministic stalemate / progress evidence",
+    )
+    p_sse.add_argument("--orchestration-id", required=True)
+    p_sse.set_defaults(func=cmd_show_stalemate_evidence)
+
+    p_cao = sub.add_parser("cancel-orchestration", help="Cancel an active orchestration")
+    p_cao.add_argument("--orchestration-id", required=True)
+    p_cao.add_argument("--reason", default="operator cancel")
+    p_cao.set_defaults(func=cmd_cancel_orchestration)
 
     return parser
 

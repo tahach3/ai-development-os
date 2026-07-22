@@ -13,12 +13,14 @@ Logical roles remain **Claude**, **Cursor**, and **Codex**. Round 1–2 adapters
 - Daily editing, navigation, targeted fixes, UI, diff review, verification
 - Default for `small` / `normal` work and UI / small_fix / verification
 - Round 3B provider id: `cursor` — CLI automation is **not claimed** unless safely detected; manual handoff remains the supported path
+- Round 3C default **implementation** role in simulated orchestration
 
 ## Codex
 
 - Second-opinion / independent review
 - Preferred for `review` and `independent_review`
 - Round 3B provider id: `codex` (adapter shell; live not authorized)
+- Round 3C default **review** role in simulated orchestration (fresh context; not the implementation result as its own review)
 
 ## Round 3B provider lane
 
@@ -29,7 +31,11 @@ Logical roles remain **Claude**, **Cursor**, and **Codex**. Round 1–2 adapters
 | `codex` | Yes (shell) | No |
 | `cursor` | Yes (shell / honest ambiguity) | No |
 
-Manual `prepare-handoff` continues to work alongside provider commands.
+## Round 3C role separation
+
+The same simulated adapter may serve both roles, but requests use different role bindings, request IDs, and context fingerprints. Audit records must **not** claim two real independent providers were used.
+
+Manual `prepare-handoff` continues to work alongside provider and orchestration commands.
 
 ## Routing
 

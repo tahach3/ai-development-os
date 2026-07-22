@@ -1,3 +1,3 @@
-"""AI Development Operating System — Round 3B (controlled provider adapters)."""
+"""AI Development Operating System — Round 3C (bounded orchestration)."""
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

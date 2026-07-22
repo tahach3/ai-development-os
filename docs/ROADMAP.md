@@ -16,24 +16,28 @@ Foundation: registry, tasks, lifecycle, routing, budgets, context, git inspect, 
 
 Safe execution foundation: sessions, worktrees, allowlisted pytest, envelopes, audits.
 
-## Round 3B (this release)
+## Round 3B
 
-Controlled provider CLI adapters:
+Controlled provider CLI adapters (contracts, discovery, simulated provider, gated live shells — live not authorized in validation). Live smoke attempt 2026-07-22: **blocked_before_execution**, zero live calls.
 
-- Provider-neutral contracts + result schema `3b.1`
-- Safe discovery (no install, no auth inspection)
-- Fail-closed config modes including simulated / live_gated
-- Deterministic simulated provider + fixtures
-- CLI shells for Claude Code / Codex / Cursor (live not authorized)
-- Operator CLI for list/capabilities/discover/config/validate/preview/simulate/status/result/cancel
-- Design: `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md`
+## Round 3C (this release)
 
-## Round 3B+ / later (only with explicit approval)
+Bounded orchestration with deterministic stalemate detection:
 
-- Separately authorized **live** local CLI smoke for one provider (2026-07-22 attempt: **blocked_before_execution** — no installed provider with proven noninteractive live path; Cursor PATH detection alone is insufficient; live still gated)
+- Explicit orchestration state machine + durable records/events/round evidence (`3c.1`)
+- Binding/staleness fail-closed checks before every step
+- Simulated impl → Round 3A targeted tests → independent simulated review → bounded repair
+- Deterministic progress/stalemate (consecutive identical evidence, no-change repair, A-B-A oscillation, repeated malformed)
+- CLI: create/validate/preview/step/run/resume/show/history/stalemate/cancel
+- Design: `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md`
+- Package `0.5.0`
+
+## Round 3D+ / later (only with explicit approval)
+
+- Separately authorized **live** local CLI smoke for one provider (only with proven noninteractive path)
 - Broader command profiles beyond pytest
 - Equitify connection after the exact user command
-- Any automation beyond manual handoff + local allowlisted exec + gated providers
+- Any automation beyond manual handoff + local allowlisted exec + gated providers + simulated orchestration
 
 ## Explicitly deferred
 
@@ -41,5 +45,7 @@ Controlled provider CLI adapters:
 - Paid API adapters
 - Browser automation
 - Auto-merge / auto-push
+- General provider-generated patch application engines
 - Self-modifying routing / safety rules
 - Copying third-party orchestrator code into this repo
+- LLM-based stalemate judges

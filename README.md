@@ -1,22 +1,23 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest execution**, and Round 3B **controlled provider CLI adapters** (discovery / simulated / gated — **no live model calls by default**).
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, and Round 3C **bounded implementation → test → review → repair orchestration** with deterministic stalemate detection — validated through the **simulated** provider only (**no live model calls**).
 
-## Round 3B scope
+## Round 3C scope
 
-Adds provider-neutral adapter contracts, safe CLI discovery (version/help only, no install), fail-closed provider config, a deterministic **simulated** provider with fixtures, CLI adapter shells for Claude Code / Codex / Cursor, normalized provider result envelopes, and operator CLI for list/discover/preview/simulate/status/cancel.
+Adds a resumable orchestration engine that coordinates approved task/plan → simulated implementation → targeted tests → independent simulated review → bounded repair → completion, block, cancel, or human escalation. Stalemate detection is **deterministic** (structured evidence), not LLM-based.
 
-**Status distinctions (important):**
+**Honest status:**
 
-| Claim | Round 3B |
+| Claim | Round 3C |
 | --- | --- |
-| Adapter implemented | Yes — `simulated`, `claude_code`, `codex`, `cursor` |
-| CLI detected | Only if present on PATH / configured path (honest reporting) |
-| Provider capability verified | Discovery/version only; noninteractive Cursor **not** assumed |
-| Simulated execution verified | Yes — fixtures + policy/session/audit paths |
-| Live execution authorized | **No** — separately authorized smoke only |
+| Bounded orchestration state machine | Yes |
+| Simulated full-loop validation | Yes |
+| Deterministic stalemate / repair limits | Yes |
+| Live multi-agent automation | **No** |
+| Provider text executed as code/commands | **No** |
+| Live provider smoke | Still `blocked_before_execution` (zero live calls) |
 
-**Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push, silent CLI installs, credential inspection.
+**Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push, arbitrary patch engines, credential inspection.
 
 ## Install (dev)
 
@@ -32,11 +33,13 @@ ai-dev-os init
 ai-dev-os register-project --id calculator-demo --name "Calculator Demo" --root demo_projects/calculator-demo
 # … Round 2 plan approval + Round 3A session as needed …
 
-ai-dev-os list-provider-adapters
-ai-dev-os discover-providers
-ai-dev-os show-provider-config
-# Enable simulated provider in config (see config/providers.example.yaml) before:
-# ai-dev-os run-simulated-provider --task-id … --plan-id … --session-id … --fixture success_impl
+# Round 3C (simulated default):
+ai-dev-os create-orchestration --task-id … --plan-id … --session-id … --scenario direct_success
+ai-dev-os validate-orchestration --orchestration-id …
+ai-dev-os preview-orchestration --orchestration-id …
+ai-dev-os run-orchestration --orchestration-id …
+ai-dev-os show-orchestration --orchestration-id …
+ai-dev-os show-stalemate-evidence --orchestration-id …
 ```
 
 ## Safe execution (Round 3A)
@@ -47,8 +50,15 @@ Isolated sessions / worktrees / allowlisted `python -m pytest` remain available 
 
 - Default config is **fail-closed** (`disabled`).
 - Modes: `disabled` | `discovery_only` | `simulated` | `manual_handoff` | `live_local_cli_allowed`.
-- Live requires every gate in `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` and is **not** exercised in this round’s validation.
+- Live requires every gate in `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` and is **not** exercised in validation.
+
+## Bounded orchestration (Round 3C)
+
+- Config: `config/orchestration.yaml` (schema `3c.1`, simulated-only, fail-closed).
+- Design: `docs/ROUND_3C_BOUNDED_ORCHESTRATION_DESIGN.md`.
+- Worktree mutations in synthetic demos are **harness/fixture-controlled** — provider text is never executed.
+- Loops stop on repair limit, step limit, stalemate → `human_review_required` / `blocked`.
 
 ## Docs
 
-See `docs/` for architecture, Round 3A/3B designs, security, model roles, zero-click limits, roadmap, and project chronicle.
+See `docs/` for architecture, Round 3A/3B/3C designs, security, model roles, zero-click limits, roadmap, and project chronicle.

@@ -9,6 +9,7 @@ This OS is **not** zero-click automation.
 - Storing reports and behavioral recommendations
 - Round 3A allowlisted pytest in isolated sessions
 - Round 3B provider **discovery**, **preview**, and **simulated** fixture execution (when explicitly enabled)
+- Round 3C **bounded** simulated orchestration steps (until a safety boundary)
 
 ## What always requires a human
 
@@ -19,6 +20,8 @@ This OS is **not** zero-click automation.
 - Committing / pushing in target repositories
 - Connecting Equitify (explicit user command only)
 - Applying any behavioral recommendation (no auto rule rewrite)
+- Resolving orchestration **stalemate** / repair-limit / blocked states
+- Creating a new orchestration after cancellation (cancelled cannot silently resume)
 
 ## Adapter contracts
 
@@ -34,6 +37,12 @@ Simulated provider results use:
 automation_status: simulated_provider_execution
 ```
 
-Discovery-only uses `discovery_only`. Live local CLI (`live_local_cli`) is gated and **not authorized** in Round 3B validation.
+Simulated orchestration uses:
+
+```text
+automation_status: simulated_orchestration
+```
+
+Discovery-only uses `discovery_only`. Live local CLI (`live_local_cli`) is gated and **not authorized** in Round 3B/3C validation.
 
 There is no cloud agent, dashboard trigger, or browser automation.

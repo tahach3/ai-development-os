@@ -99,10 +99,20 @@ def assert_request_bindings(
 
     assigned = task.assigned_role
     if assigned and assigned is not role:
-        raise ProviderPolicyError(
-            "Provider request cannot change its role",
-            FailureClass.STALE_BINDING,
+        # Independent review may use a distinct reviewer role (Round 3C).
+        independent_review_ok = role is ModelRole.CODEX and task.status in (
+            TaskStatus.READY_FOR_REVIEW,
+            TaskStatus.REVIEW_FAILED,
+            TaskStatus.REVIEW_PASSED,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VALIDATING,
+            TaskStatus.APPROVED_FOR_IMPLEMENTATION,
         )
+        if not independent_review_ok:
+            raise ProviderPolicyError(
+                "Provider request cannot change its role",
+                FailureClass.STALE_BINDING,
+            )
 
     plan = plan_store.load(request.plan_id)
     if plan.task_id != request.task_id or plan.project_id != request.project_id:

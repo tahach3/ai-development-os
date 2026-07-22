@@ -1,3 +1,4 @@
 # Maximum repair rounds before task is blocked for human review.
 # Inspired by Ralphex max-iteration / stalemate concepts (pattern only).
+# Round 3C orchestration config may set a ceiling at or below this value.
 max_repair_rounds: 3

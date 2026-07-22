@@ -50,6 +50,52 @@ FIXTURE_PAYLOADS: dict[str, dict[str, Any]] = {
         "summary": "Simulated independent review passed.",
         "findings": [],
     },
+    SimulatedFixture.SUCCESS_REVIEW_WITH_NOTES.value: {
+        "kind": "review",
+        "verdict": "pass_with_notes",
+        "summary": "Simulated review passed with notes.",
+        "findings": [
+            {
+                "finding_id": "note-1",
+                "severity": "note",
+                "summary": "Minor style note",
+                "path": "calculator/ops.py",
+                "code": "STYLE",
+            }
+        ],
+    },
+    SimulatedFixture.CHANGES_REQUIRED_REVIEW.value: {
+        "kind": "review",
+        "verdict": "changes_required",
+        "summary": "Simulated review requires changes.",
+        "findings": [
+            {
+                "finding_id": "def-subtract",
+                "severity": "major",
+                "summary": "subtract implementation incorrect",
+                "path": "calculator/ops.py",
+                "code": "LOGIC",
+            }
+        ],
+    },
+    SimulatedFixture.CHANGES_REQUIRED_IDENTICAL.value: {
+        "kind": "review",
+        "verdict": "changes_required",
+        "summary": "Simulated review requires identical changes.",
+        "findings": [
+            {
+                "finding_id": "def-subtract",
+                "severity": "major",
+                "summary": "subtract implementation incorrect",
+                "path": "calculator/ops.py",
+                "code": "LOGIC",
+            }
+        ],
+    },
+    SimulatedFixture.MALFORMED_REVIEW.value: {
+        "kind": "malformed",
+        "not_a_valid_envelope": True,
+    },
     SimulatedFixture.PROVIDER_REJECTION.value: {
         "kind": "rejection",
         "reason": "simulated provider rejected the request",
@@ -71,7 +117,17 @@ FIXTURE_PAYLOADS: dict[str, dict[str, Any]] = {
     SimulatedFixture.DUPLICATE_REQUEST.value: {"kind": "duplicate"},
     SimulatedFixture.STALE_PLAN.value: {"kind": "stale_plan"},
     SimulatedFixture.STALE_COMMIT.value: {"kind": "stale_commit"},
+    SimulatedFixture.STALE_CONTEXT.value: {"kind": "stale_context"},
     SimulatedFixture.CANCELLED.value: {"kind": "cancelled"},
+    SimulatedFixture.SCOPE_CHANGE.value: {
+        "kind": "implementation",
+        "summary": "Simulated scope-change attempt",
+        "outcome": "success",
+        "files_changed": ["calculator/ops.py", "UNPLANNED.md"],
+        "tests_run": [],
+        "scope_change": True,
+        "reapproval_required": True,
+    },
 }
 
 
@@ -211,6 +267,18 @@ class SimulatedProviderAdapter(ProviderAdapter):
             env = rejected_provider_result(
                 request,
                 reason="Stale starting commit binding",
+                failure_class=FailureClass.STALE_BINDING,
+                automation_status=AUTOMATION_SIMULATED,
+                executable_identity="simulated",
+                argv=argv,
+            )
+            audit_store.save_result(env)
+            return env
+
+        if fixture_id == SimulatedFixture.STALE_CONTEXT.value:
+            env = rejected_provider_result(
+                request,
+                reason="Stale context fingerprint binding",
                 failure_class=FailureClass.STALE_BINDING,
                 automation_status=AUTOMATION_SIMULATED,
                 executable_identity="simulated",
@@ -407,7 +475,10 @@ class SimulatedProviderAdapter(ProviderAdapter):
             audit_store.save_result(env)
             return env
 
-        if fixture_id == SimulatedFixture.MALFORMED_OUTPUT.value:
+        if fixture_id in (
+            SimulatedFixture.MALFORMED_OUTPUT.value,
+            SimulatedFixture.MALFORMED_REVIEW.value,
+        ):
             # Persist a deliberately incomplete artifact; normalize fails closed.
             bad_path = audit_store.artifact_path(request.request_id, "malformed.json")
             bad_path.write_text("{not-json", encoding="utf-8")

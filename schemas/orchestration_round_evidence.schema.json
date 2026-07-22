@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/orchestration_round_evidence.schema.json",
+  "title": "RoundEvidence",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "orchestration_id",
+    "round_number"
+  ],
+  "properties": {
+    "schema_version": { "const": "3c.1" },
+    "canonical_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "severity", "summary"]
+      }
+    }
+  }
+}

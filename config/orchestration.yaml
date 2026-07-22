@@ -1,0 +1,35 @@
+# Round 3C bounded orchestration configuration (schema 3c.1).
+# Fail closed: missing/malformed/unsupported versions rejected by loader.
+schema_version: "3c.1"
+policy_version: "3c.1"
+
+# Simulated provider only for Round 3C validation.
+default_provider_id: simulated
+default_invocation_mode: simulated
+allow_live_providers: false
+
+implementation_role: cursor
+review_role: codex
+implementation_provider_id: simulated
+review_provider_id: simulated
+
+max_repair_rounds: 3
+max_total_steps: 40
+consecutive_no_progress_threshold: 2
+oscillation_history_window: 6
+
+default_timeout_seconds: 30
+default_output_limit_bytes: 65536
+
+# Completing on pass_with_notes is allowed when no blocking findings remain.
+allow_pass_with_notes_completion: true
+# Targeted test failures may open a repair round when otherwise eligible.
+allow_test_failure_repair: true
+
+# Stalemate escalates to human_review_required (not live provider).
+stalemate_state: human_review_required
+repair_limit_state: blocked
+step_limit_state: blocked
+
+human_review_on_stalemate: true
+human_review_on_repair_limit: true
