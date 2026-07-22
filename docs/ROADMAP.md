@@ -52,6 +52,8 @@ Local CI, quality gates, and pull-request validation foundation:
 
 Completed and currently approved rounds above remain authoritative for **what is implemented**. Blueprint Phases A–I in [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) define the longer-term vision beyond Round 4A and future Round 4B+ work. Each future implementation round requires separate approval and planning.
 
+**Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype. No memory implementation exists yet; Round 4A package **0.6.0** remains the implemented baseline.
+
 ## Explicitly deferred
 
 - LangChain / CrewAI / AutoGen

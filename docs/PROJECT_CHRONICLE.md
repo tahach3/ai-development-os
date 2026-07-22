@@ -282,6 +282,12 @@ Source: `docs/ROADMAP.md`.
 - **No runtime behavior changed**; no dependencies or package versions changed
 - Implemented baseline remains **Round 4A**, package **0.6.0**; the blueprint defines future direction only
 
+### Phase B1 docs — shared memory design (documentation only)
+
+- Added [`docs/SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md): Phase B1 controlled shared-memory design (authority, classes, isolation, approval lifecycle, retrieval, retention, security, SQLite prototype boundaries, conceptual APIs, MVP criteria, open decisions)
+- **No memory implementation**, schema, database, dependency, provider, or runtime change
+- Round 4A package **0.6.0** remains the implemented baseline
+
 ---
 
 ## 11. Equitify is not connected
@@ -313,6 +319,7 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ZERO_CLICK_LIMITATIONS.md` | What stays human |
 | `docs/MODEL_ROLES.md` | Claude / Cursor / Codex roles; OS as platform authority |
 | `docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md` | Future AI OS integration master blueprint (direction only) |
+| `docs/SHARED_MEMORY_DESIGN.md` | Phase B1 shared-memory design only (not implemented) |
 | `exports/AI_Development_OS_Project_Chronicle.md` | Downloadable chronicle copy |
 
 ---

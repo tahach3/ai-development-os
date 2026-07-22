@@ -53,6 +53,8 @@ register-project → create-task → … → approve-plan
 
 The current implemented architecture remains **Round 4A**. [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines the approved future platform direction; blueprint features are not implemented unless explicitly recorded in later rounds.
 
+Phase B1 shared-memory design (not implemented): [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md). Package **0.6.0** / Round 4A remains the shipped baseline; no memory store, schema, or runtime exists yet.
+
 ## Non-goals (still)
 
 - Network I/O / paid LLM APIs from the product by default
