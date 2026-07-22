@@ -10,7 +10,11 @@ from .fingerprints import fingerprint
 from .models import utc_now_iso
 from .provider_config import ProviderConfig, fail_closed_default_config, load_provider_config
 from .provider_models import PROVIDER_ADAPTER_VERSION, ProviderMode
-from .provider_readiness_constants import READINESS_POLICY_VERSION, READINESS_SCHEMA_VERSION
+from .provider_readiness_constants import (
+    HELP_SUMMARY_LIMIT,
+    READINESS_POLICY_VERSION,
+    READINESS_SCHEMA_VERSION,
+)
 from .provider_readiness_discovery import discover_executable_candidates
 from .provider_readiness_models import (
     AuditEvent,
@@ -30,6 +34,9 @@ from .provider_readiness_policy import (
     capability_from_adapter_contract,
     decide_provider_verdict,
 )
+from .provider_readiness_auth import resolve_auth_probe_plan
+from .provider_readiness_host_verdict import compute_host_system_verdict
+from .provider_readiness_noninteractive import assess_noninteractive_contract
 from .provider_readiness_probes import interpret_auth_probe, probe_provider
 from .provider_readiness_profiles import adapter_version_for, get_profile, version_compatible
 from .provider_readiness_roles import (
@@ -321,14 +328,22 @@ class ProviderReadinessEngine:
         version_status = CompatibilityStatus.UNAVAILABLE.value
         cli_version = None
         compat = CompatibilityStatus.UNAVAILABLE.value
+        help_summary: str | None = None
+        auth_plan = resolve_auth_probe_plan(
+            profile_auth_argv=profile.auth_argv,
+            auth_probe_mode=getattr(profile, "auth_probe_mode", "profile_only"),
+            help_text=None,
+        )
 
         if discovery.status is DiscoveryStatus.INSTALLED and discovery.selected:
+            # First pass: version + help (help needed for auth plan when mode requires it).
             probes = probe_provider(
                 discovery.selected.path,
                 profile,
                 adapter_version=adapter_version,
                 executable_fingerprint=discovery.selected.fingerprint,
                 include_help=include_help_summary,
+                force_help_for_auth_plan=True,
                 timeout=probe_timeout,
             )
             if "probes" in overrides:
@@ -373,10 +388,50 @@ class ProviderReadinessEngine:
                     help_status = CompatibilityStatus.UNAVAILABLE.value
                 elif help_probe.exit_code == 0:
                     help_status = CompatibilityStatus.SUPPORTED.value
+                    # Prefer raw-ish sanitized summary; keep enough for contract scans.
+                    help_summary = (help_probe.sanitized_output_summary or "")[:HELP_SUMMARY_LIMIT]
                 else:
                     help_status = CompatibilityStatus.UNVERIFIED.value
+                    help_summary = (help_probe.sanitized_output_summary or "")[:HELP_SUMMARY_LIMIT]
 
+            # If overrides supply help text, prefer that for planning (synthetic tests).
+            if overrides.get("help_text"):
+                help_summary = str(overrides["help_text"])[:HELP_SUMMARY_LIMIT]
+
+            # Resolve auth plan from profile + help advertisement.
+            auth_plan = resolve_auth_probe_plan(
+                profile_auth_argv=profile.auth_argv,
+                auth_probe_mode=getattr(profile, "auth_probe_mode", "profile_only"),
+                help_text=help_summary,
+            )
+            events.append(
+                AuditEvent(
+                    event_type=(
+                        AuditEventType.AUTH_STATUS_ADVERTISED.value
+                        if auth_plan.advertised
+                        else AuditEventType.AUTH_STATUS_NOT_ADVERTISED.value
+                    ),
+                    message=auth_plan.reason,
+                    provider_id=provider_id,
+                    details=auth_plan.to_dict(),
+                )
+            )
+
+            # Run auth probe only when plan says runnable and initial auth was skipped.
             auth_probe = probes.get("auth")
+            if auth_plan.runnable and auth_plan.argv and (auth_probe is None or auth_probe.skipped):
+                auth_probe = probe_provider(
+                    discovery.selected.path,
+                    profile,
+                    adapter_version=adapter_version,
+                    executable_fingerprint=discovery.selected.fingerprint,
+                    include_help=False,
+                    auth_argv_override=auth_plan.argv,
+                    timeout=probe_timeout,
+                ).get("auth")
+                if auth_probe:
+                    probes["auth"] = auth_probe
+
             if auth_probe:
                 events.append(
                     AuditEvent(
@@ -389,7 +444,12 @@ class ProviderReadinessEngine:
                         provider_id=provider_id,
                     )
                 )
-                probes_out.append(auth_probe.to_dict())
+                # Avoid duplicate auth entries if already present from first pass.
+                if not any(p.get("kind") == "auth_status" for p in probes_out):
+                    probes_out.append(auth_probe.to_dict())
+                elif not auth_probe.skipped:
+                    probes_out = [p for p in probes_out if p.get("kind") != "auth_status"]
+                    probes_out.append(auth_probe.to_dict())
                 if auth_probe.skipped:
                     auth_status = AuthenticationStatus.VERIFICATION_UNSUPPORTED.value
                     auth_method = "none"
@@ -415,6 +475,14 @@ class ProviderReadinessEngine:
             auth_status = overrides["authentication_status"]
             auth_method = overrides.get("authentication_verification_method", auth_method)
 
+        if overrides.get("help_text"):
+            help_summary = str(overrides["help_text"])[:HELP_SUMMARY_LIMIT]
+            auth_plan = resolve_auth_probe_plan(
+                profile_auth_argv=profile.auth_argv,
+                auth_probe_mode=getattr(profile, "auth_probe_mode", "profile_only"),
+                help_text=help_summary,
+            )
+
         record.probes = probes_out
         record.cli_version = cli_version
         record.version_verification_status = version_status
@@ -422,30 +490,34 @@ class ProviderReadinessEngine:
         record.help_probe_status = help_status
         record.authentication_status = auth_status
         record.authentication_verification_method = auth_method
+        record.auth_status_command_advertised = bool(auth_plan.advertised)
+        record.auth_status_command_runnable = bool(auth_plan.runnable)
+        record.metadata["auth_probe_plan"] = auth_plan.to_dict()
 
-        # Noninteractive assessment — never from live prompt.
-        if profile.requires_automation_cli_proof:
-            if discovery.status is DiscoveryStatus.INSTALLED and cli_version:
-                # Version alone does not prove agent CLI for Cursor.
-                record.noninteractive_status = NoninteractiveStatus.AMBIGUOUS.value
-                record.noninteractive_evidence = (
-                    "cursor_desktop_or_cli_ambiguous; automation agent not proven"
-                )
-            else:
-                record.noninteractive_status = NoninteractiveStatus.UNAVAILABLE.value
-                record.noninteractive_evidence = "cursor_automation_cli_not_detected"
-        elif profile.synthetic_verified_noninteractive:
-            record.noninteractive_status = NoninteractiveStatus.SUPPORTED_VERIFIED.value
-            record.noninteractive_evidence = "synthetic_adapter_contract"
-        elif profile.noninteractive_documented and discovery.status is DiscoveryStatus.INSTALLED:
-            record.noninteractive_status = NoninteractiveStatus.SUPPORTED_DOCUMENTED.value
-            record.noninteractive_evidence = "adapter_contract_and_profile"
-        elif discovery.status is DiscoveryStatus.INSTALLED:
-            record.noninteractive_status = NoninteractiveStatus.AMBIGUOUS.value
-            record.noninteractive_evidence = "installed_but_noninteractive_unproven"
-        else:
-            record.noninteractive_status = NoninteractiveStatus.UNAVAILABLE.value
-            record.noninteractive_evidence = "not_installed"
+        # Noninteractive contract — never from live prompt.
+        ni_assessment = assess_noninteractive_contract(
+            profile,
+            discovery_installed=discovery.status is DiscoveryStatus.INSTALLED,
+            help_text=help_summary,
+            synthetic_verified=bool(overrides.get("capabilities_verified"))
+            or bool(overrides.get("synthetic_noninteractive_verified")),
+            force_editor_cli=overrides.get("force_editor_cli"),
+        )
+        record.noninteractive_status = ni_assessment.overall_status
+        record.noninteractive_evidence = ni_assessment.overall_evidence
+        record.noninteractive_contract = ni_assessment.to_dict()
+        events.append(
+            AuditEvent(
+                event_type=AuditEventType.NONINTERACTIVE_CONTRACT_ASSESSED.value,
+                message=ni_assessment.overall_evidence,
+                provider_id=provider_id,
+                details={
+                    "overall_status": ni_assessment.overall_status,
+                    "editor_cli_detected": ni_assessment.editor_cli_detected,
+                    "synthetic_verified": ni_assessment.synthetic_verified,
+                },
+            )
+        )
 
         if overrides.get("noninteractive_status"):
             record.noninteractive_status = overrides["noninteractive_status"]
@@ -453,27 +525,36 @@ class ProviderReadinessEngine:
                 "noninteractive_evidence", record.noninteractive_evidence
             )
 
-        # Capability assessments from adapter contracts (documented / verified).
-        documented_caps = discovery.status is DiscoveryStatus.INSTALLED and provider_id != "cursor"
-        verified_caps = bool(overrides.get("capabilities_verified"))
-        record.working_directory_binding_status = capability_from_adapter_contract(
-            documented=documented_caps or verified_caps, verified=verified_caps
+        # Capability assessments from contract dimensions.
+        dim_map = {d.name: d for d in ni_assessment.dimensions}
+        record.working_directory_binding_status = (
+            dim_map["working_directory_binding"].status
+            if "working_directory_binding" in dim_map
+            else CapabilityStatus.UNAVAILABLE.value
         )
-        record.isolated_worktree_compatibility = capability_from_adapter_contract(
-            documented=documented_caps or verified_caps, verified=verified_caps
+        record.isolated_worktree_compatibility = record.working_directory_binding_status
+        record.structured_output_status = (
+            dim_map["structured_output"].status
+            if "structured_output" in dim_map
+            else CapabilityStatus.UNAVAILABLE.value
         )
-        record.structured_output_status = capability_from_adapter_contract(
-            documented=True, verified=verified_caps
+        record.timeout_support = (
+            dim_map["timeout"].status
+            if "timeout" in dim_map
+            else CapabilityStatus.SUPPORTED_VERIFIED.value
         )
-        record.timeout_support = CapabilityStatus.SUPPORTED_VERIFIED.value
-        record.cancellation_support = CapabilityStatus.SUPPORTED_DOCUMENTED.value
-        record.output_bounding_support = CapabilityStatus.SUPPORTED_VERIFIED.value
+        record.cancellation_support = (
+            dim_map["cancellation"].status
+            if "cancellation" in dim_map
+            else CapabilityStatus.SUPPORTED_DOCUMENTED.value
+        )
+        record.output_bounding_support = (
+            dim_map["output_limits"].status
+            if "output_limits" in dim_map
+            else CapabilityStatus.SUPPORTED_VERIFIED.value
+        )
         record.environment_sanitization_support = CapabilityStatus.SUPPORTED_VERIFIED.value
         record.network_behavior_classification = profile.network_behavior
-
-        if provider_id == "cursor":
-            record.working_directory_binding_status = CapabilityStatus.AMBIGUOUS.value
-            record.isolated_worktree_compatibility = CapabilityStatus.AMBIGUOUS.value
 
         matrix = build_role_matrix(
             profile,
@@ -534,6 +615,8 @@ class ProviderReadinessEngine:
             ),
             "readiness_policy": READINESS_POLICY_VERSION,
             "adapter_version": adapter_version,
+            "auth_probe_plan": fingerprint(auth_plan.to_dict()),
+            "noninteractive_contract": fingerprint(record.noninteractive_contract),
         }
         record.evidence_references = [
             f"probe:{p.get('kind')}" for p in probes_out if not p.get("skipped")
@@ -553,6 +636,7 @@ class ProviderReadinessEngine:
         enable_get_command: bool = True,
         probe_timeout: float | None = None,
         provider_overrides: dict[str, dict[str, Any]] | None = None,
+        verify_noninteractive_contract: bool = False,
     ) -> ReadinessAuditBundle:
         ids = list(providers) if providers else [
             p for p in list_provider_ids() if p != "simulated"
@@ -565,16 +649,20 @@ class ProviderReadinessEngine:
         records: list[ProviderReadinessRecord] = []
         overrides_map = provider_overrides or {}
         for pid in ids:
+            ovr = dict(overrides_map.get(pid) or {})
+            if verify_noninteractive_contract and "synthetic_noninteractive_verified" not in ovr:
+                # Flag requests contract assessment (already default); do not invent live proof.
+                ovr.setdefault("verify_noninteractive_contract", True)
             rec = self.audit_provider(
                 pid,
                 project_id=project_id,
-                include_help_summary=include_help_summary,
+                include_help_summary=include_help_summary or verify_noninteractive_contract,
                 path_env=path_env,
                 allow_unknown_auth_conditional=allow_unknown_auth_conditional,
                 enable_where=enable_where,
                 enable_get_command=enable_get_command,
                 probe_timeout=probe_timeout,
-                synthetic_overrides=overrides_map.get(pid),
+                synthetic_overrides=ovr or None,
             )
             records.append(rec)
 
@@ -592,6 +680,11 @@ class ProviderReadinessEngine:
             r.reviewer_independence_status = independence
 
         agg = aggregate_verdict([r.final_readiness_verdict for r in records])
+        host_verdict = compute_host_system_verdict(
+            records,
+            independence_status=independence,
+            combinations=combinations,
+        )
         recommended = next((c for c in combinations if c.recommended), None)
         blockers: list[str] = []
         warnings: list[str] = []
@@ -616,11 +709,17 @@ class ProviderReadinessEngine:
             blockers=blockers,
             warnings=warnings,
             live_provider_invocations=0,
+            host_system_verdict=host_verdict,
             audit_events=[
                 AuditEvent(
                     event_type=AuditEventType.LIVE_INVOCATION_BLOCKED.value,
                     message="Audit complete; live_provider_invocations=0",
-                )
+                ),
+                AuditEvent(
+                    event_type=AuditEventType.HOST_SYSTEM_VERDICT_PRODUCED.value,
+                    message=f"Host system verdict: {host_verdict}",
+                    details={"host_system_verdict": host_verdict},
+                ),
             ],
             source_fingerprints={
                 "provider_config": fingerprint(config.sanitized_public_dict()),

@@ -12,6 +12,8 @@ from .models import utc_now_iso
 from .provider_readiness_constants import (
     AUTHENTICATION_PROBE_POLICY_VERSION,
     EXECUTABLE_TRUST_POLICY_VERSION,
+    HOST_SYSTEM_VERDICT_SCHEMA_VERSION,
+    NONINTERACTIVE_CONTRACT_POLICY_VERSION,
     READINESS_POLICY_VERSION,
     READINESS_SCHEMA_VERSION,
     ROLE_ELIGIBILITY_POLICY_VERSION,
@@ -141,6 +143,10 @@ class AuditEventType(str, Enum):
     PIN_VALIDATED = "pin_validated"
     PIN_REJECTED = "pin_rejected"
     READINESS_RERUN = "readiness_rerun"
+    AUTH_STATUS_ADVERTISED = "auth_status_advertised"
+    AUTH_STATUS_NOT_ADVERTISED = "auth_status_not_advertised"
+    NONINTERACTIVE_CONTRACT_ASSESSED = "noninteractive_contract_assessed"
+    HOST_SYSTEM_VERDICT_PRODUCED = "host_system_verdict_produced"
 
 
 READINESS_ROLES = (
@@ -275,8 +281,13 @@ class ProviderReadinessRecord:
     executable_trust_policy_version: str = EXECUTABLE_TRUST_POLICY_VERSION
     version_compatibility_policy_version: str = VERSION_COMPATIBILITY_POLICY_VERSION
     authentication_probe_policy_version: str = AUTHENTICATION_PROBE_POLICY_VERSION
+    noninteractive_contract_policy_version: str = NONINTERACTIVE_CONTRACT_POLICY_VERSION
     role_eligibility_policy_version: str = ROLE_ELIGIBILITY_POLICY_VERSION
     safe_runner_policy_version: str = SAFE_RUNNER_POLICY_VERSION
+    host_system_verdict_schema_version: str = HOST_SYSTEM_VERDICT_SCHEMA_VERSION
+    auth_status_command_advertised: bool = False
+    auth_status_command_runnable: bool = False
+    noninteractive_contract: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def fingerprint_payload(self) -> dict[str, Any]:
@@ -297,6 +308,8 @@ class ProviderReadinessRecord:
             "authentication_probe_policy_version": self.authentication_probe_policy_version,
             "authentication_status": self.authentication_status,
             "authentication_verification_method": self.authentication_verification_method,
+            "auth_status_command_advertised": bool(self.auth_status_command_advertised),
+            "auth_status_command_runnable": bool(self.auth_status_command_runnable),
             "blockers": list(self.blockers),
             "cancellation_support": self.cancellation_support,
             "candidate_executables": list(self.candidate_executables),
@@ -315,12 +328,15 @@ class ProviderReadinessRecord:
             "generated_at": self.generated_at,
             "help_probe_status": self.help_probe_status,
             "host_platform": self.host_platform,
+            "host_system_verdict_schema_version": self.host_system_verdict_schema_version,
             "implementer_eligibility": self.implementer_eligibility,
             "isolated_worktree_compatibility": self.isolated_worktree_compatibility,
             "live_policy_status": self.live_policy_status,
             "live_provider_invocations": int(self.live_provider_invocations),
             "metadata": dict(self.metadata),
             "network_behavior_classification": self.network_behavior_classification,
+            "noninteractive_contract": dict(self.noninteractive_contract),
+            "noninteractive_contract_policy_version": self.noninteractive_contract_policy_version,
             "noninteractive_evidence": self.noninteractive_evidence,
             "noninteractive_status": self.noninteractive_status,
             "output_bounding_support": self.output_bounding_support,
@@ -381,6 +397,8 @@ class ReadinessAuditBundle:
     blockers: list[str]
     warnings: list[str]
     live_provider_invocations: int = 0
+    host_system_verdict: str = "provider_not_eligible"
+    host_system_verdict_schema_version: str = HOST_SYSTEM_VERDICT_SCHEMA_VERSION
     audit_events: list[AuditEvent] = field(default_factory=list)
     source_fingerprints: dict[str, str] = field(default_factory=dict)
     record_fingerprint: str = ""
@@ -404,6 +422,8 @@ class ReadinessAuditBundle:
             "combinations": [c.to_dict() for c in self.combinations],
             "generated_at": self.generated_at,
             "host_platform": self.host_platform,
+            "host_system_verdict": self.host_system_verdict,
+            "host_system_verdict_schema_version": self.host_system_verdict_schema_version,
             "live_provider_invocations": int(self.live_provider_invocations),
             "metadata": dict(self.metadata),
             "project_id": self.project_id,

@@ -17,8 +17,11 @@
     "record_fingerprint"
   ],
   "properties": {
-    "schema_version": { "const": "4d1.1" },
-    "readiness_policy_version": { "const": "4d1.1" },
+    "schema_version": { "const": "4d1.2" },
+    "readiness_policy_version": { "const": "4d1.2" },
+    "authentication_probe_policy_version": { "const": "4d1.2" },
+    "noninteractive_contract_policy_version": { "const": "4d1.2" },
+    "host_system_verdict_schema_version": { "const": "4d1.2" },
     "live_provider_invocations": { "const": 0 },
     "discovery_status": {
       "type": "string",
@@ -64,6 +67,17 @@
         "policy_blocked",
         "probe_failed",
         "invalid_record"
+      ]
+    },
+    "host_system_verdict": {
+      "type": "string",
+      "enum": [
+        "live_smoke_ready",
+        "live_smoke_ready_with_operator_auth",
+        "authentication_unverified",
+        "noninteractive_unverified",
+        "no_independent_reviewer",
+        "provider_not_eligible"
       ]
     }
   }

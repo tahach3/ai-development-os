@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.8.1` · **Round:** 4D1.1
+**As of:** 2026-07-22 · **Package version:** `0.8.2` · **Round:** 4D1.2
 
 ---
 
@@ -19,7 +19,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **local CI / PR validation** lane (Round 4A): deterministic quality gates, change-range validation, dependency-policy (not vuln DB), GitHub workflow definition.
 - A **private remote CI validation** lane (Round 4B): first successful GitHub Actions run on private repo `tahach3/ai-development-os` (no secrets, no live providers, no deploy/merge).
 - An **evidence-first reporting** lane (Round 4C): canonical evidence, claim statuses, audience/detail renderers, deterministic relevance, integrity fingerprints (no LLM summaries).
-- A **provider readiness** lane (Round 4D1): safe eligibility auditing for future live smoke — discovery/version/help/auth-status only; never live prompts.
+- A **provider readiness** lane (Round 4D1 / 4D1.1 / 4D1.2): safe eligibility auditing for future live smoke — discovery/version/help/auth-status + ambiguity resolution + auth/noninteractive contracts; never live prompts.
 
 ### It is not
 
@@ -309,6 +309,18 @@ python -m pytest -q
 - Live mode remains disabled; Round 4D2 requires separate authorization
 - Equitify disconnected; wrapper contents never executed; no credential inspection
 
+### Round 4D1.2 (done) — authentication and noninteractive readiness
+
+- Design: `docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md`
+- Standard: `docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md`
+- Allowlisted auth-status probes (profile or help-confirmed); never login/credential files
+- Noninteractive contract dimensions from adapter/help/synthetic fixtures only
+- Host/system verdict enum; editor CLI help can classify noninteractive as `unsupported_verified`
+- CLI: `--verify-noninteractive-contract`, `--show-host-system-verdict`
+- Schema/policy **`4d1.2`**; package **`0.8.2`**
+- Live mode remains disabled; Round 4D2 requires separate authorization after `live_smoke_ready*`
+- Equitify disconnected; `live_provider_invocations: 0`
+
 ### Deferred (explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs (tags remain residual supply-chain risk)
@@ -384,7 +396,9 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/REPORTING_STANDARD.md` | Round 4C reporting standard / CLI contract |
 | `docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md` | Round 4D1 provider readiness design |
 | `docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md` | Round 4D1.1 CLI ambiguity resolution design |
-| `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 / 4D1.1 readiness standard / CLI contract |
+| `docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md` | Round 4D1.2 auth + noninteractive design |
+| `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 / 4D1.1 / 4D1.2 readiness standard / CLI contract |
+| `docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md` | Round 4D1.2 auth + noninteractive standard |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |
 | `docs/ROADMAP.md` | Round sequencing |

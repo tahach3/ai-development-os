@@ -75,6 +75,14 @@ Round 4D1.1 ambiguity resolution adds:
 - Operator decision records when distinct trusted binaries remain
 - Stale pins / fingerprint mismatches fail closed
 
+Round 4D1.2 authentication / noninteractive readiness adds:
+
+- Auth-status probes only from profile or help-confirmed allowlisted argv (`auth status`, `whoami`)
+- Never login/refresh/credential-file reads; tokens redacted
+- Noninteractive contract from adapter/help/synthetic fixtures only — never live prompts
+- Host/system verdict enum; editor CLI help can prove noninteractive **unsupported** without claiming agent capability
+- Live mode remains disabled; Round 4D2 still separately authorized
+
 ## Validation
 
 - Explicit required fields and enums
@@ -85,8 +93,8 @@ Round 4D1.1 ambiguity resolution adds:
 - Orchestration schema `3c.1`; unsupported versions fail closed
 - CI schema/policy `4a.1`; unsupported versions fail closed
 - Reporting schema/policy `4c.1`; fingerprint + freshness validation fail closed
-- Provider readiness schema/policy `4d1.1` + ambiguity/pin `4d1.1.1`; staleness + zero live-invocation validation fail closed
+- Provider readiness schema/policy `4d1.2` + ambiguity/pin `4d1.1.1`; staleness + zero live-invocation validation fail closed
 
 ## Trust boundary
 
-Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). Round 4D1 / 4D1.1 readiness audits inspect local CLIs harmlessly and never send model prompts. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.
+Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). Round 4D1 / 4D1.1 / 4D1.2 readiness audits inspect local CLIs harmlessly and never send model prompts. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.

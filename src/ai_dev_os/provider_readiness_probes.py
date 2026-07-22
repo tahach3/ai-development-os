@@ -78,6 +78,14 @@ def redact_probe_text(text: str, limit: int = 400) -> str:
     return cleaned
 
 
+def help_text_for_analysis(probe: ProbeRecord, *, limit: int = 4000) -> str:
+    """Return a longer redacted help extract for advertisement/contract scans."""
+    # ProbeRecord only stores the short summary; callers that need analysis should
+    # pass through overrides or re-use sanitized_output_summary with a higher cap
+    # when available via metadata.
+    return redact_probe_text(probe.sanitized_output_summary or "", limit=limit)
+
+
 def assert_probe_argv_safe(argv_tail: Sequence[str]) -> None:
     for token in argv_tail:
         low = token.lower()
@@ -128,9 +136,11 @@ def run_safe_probe(
                     break
             if version is None:
                 parse_status = CompatibilityStatus.MALFORMED.value
+        # Help summaries need more room for auth/noninteractive advertisement scans.
+        summary_limit = min(output_limit, 4000) if kind is ProbeKind.HELP else 400
         summary = redact_probe_text(
             (completed.stdout or "") or (completed.stderr or ""),
-            limit=400,
+            limit=summary_limit,
         )
         if stderr and not (completed.stdout or "").strip():
             summary = stderr
@@ -234,6 +244,8 @@ def probe_provider(
     executable_fingerprint: str | None,
     include_help: bool = False,
     timeout: float | None = None,
+    auth_argv_override: Sequence[str] | None = None,
+    force_help_for_auth_plan: bool = False,
 ) -> dict[str, ProbeRecord]:
     """Run allowlisted probes for one provider executable."""
     results: dict[str, ProbeRecord] = {}
@@ -256,7 +268,12 @@ def probe_provider(
             executable_fingerprint=executable_fingerprint,
         )
 
-    if include_help and profile.help_argv:
+    need_help = include_help or force_help_for_auth_plan or (
+        getattr(profile, "auth_probe_mode", "profile_only") == "help_confirmed_allowlist"
+        and not profile.auth_argv
+        and auth_argv_override is None
+    )
+    if need_help and profile.help_argv:
         results["help"] = run_safe_probe(
             executable,
             profile.help_argv,
@@ -273,10 +290,14 @@ def probe_provider(
             executable_fingerprint=executable_fingerprint,
         )
 
-    if profile.auth_argv:
+    auth_argv = tuple(auth_argv_override) if auth_argv_override is not None else None
+    if auth_argv is None and profile.auth_argv:
+        auth_argv = tuple(profile.auth_argv)
+
+    if auth_argv:
         results["auth"] = run_safe_probe(
             executable,
-            profile.auth_argv,
+            auth_argv,
             kind=ProbeKind.AUTH_STATUS,
             adapter_version=adapter_version,
             executable_fingerprint=executable_fingerprint,
@@ -285,7 +306,10 @@ def probe_provider(
     else:
         results["auth"] = skipped_probe(
             ProbeKind.AUTH_STATUS,
-            reason="authentication status probe unsupported for provider; not inferred from credential files",
+            reason=(
+                "authentication status probe unsupported for provider; "
+                "not inferred from credential files"
+            ),
             adapter_version=adapter_version,
             executable_fingerprint=executable_fingerprint,
         )

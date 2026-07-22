@@ -8,6 +8,8 @@ from typing import Any
 from .provider_readiness_constants import (
     AUTHENTICATION_PROBE_POLICY_VERSION,
     EXECUTABLE_TRUST_POLICY_VERSION,
+    HOST_SYSTEM_VERDICT_SCHEMA_VERSION,
+    NONINTERACTIVE_CONTRACT_POLICY_VERSION,
     READINESS_POLICY_VERSION,
     READINESS_SCHEMA_VERSION,
     ROLE_ELIGIBILITY_POLICY_VERSION,
@@ -55,6 +57,10 @@ def evaluate_staleness(
         reasons.append("version_compatibility_policy_version_changed")
     if data.get("authentication_probe_policy_version") != AUTHENTICATION_PROBE_POLICY_VERSION:
         reasons.append("authentication_probe_policy_version_changed")
+    if data.get("noninteractive_contract_policy_version") != NONINTERACTIVE_CONTRACT_POLICY_VERSION:
+        reasons.append("noninteractive_contract_policy_version_changed")
+    if data.get("host_system_verdict_schema_version") != HOST_SYSTEM_VERDICT_SCHEMA_VERSION:
+        reasons.append("host_system_verdict_schema_version_changed")
     if data.get("role_eligibility_policy_version") != ROLE_ELIGIBILITY_POLICY_VERSION:
         reasons.append("role_eligibility_policy_version_changed")
     if data.get("safe_runner_policy_version") != SAFE_RUNNER_POLICY_VERSION:

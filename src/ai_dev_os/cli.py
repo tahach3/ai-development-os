@@ -1193,8 +1193,12 @@ def cmd_provider_readiness(args: argparse.Namespace) -> int:
         bundle = engine.audit_all(
             project_id=args.project_id,
             providers=providers,
-            include_help_summary=bool(args.include_help_summary),
+            include_help_summary=bool(args.include_help_summary)
+            or bool(getattr(args, "verify_noninteractive_contract", False)),
             allow_unknown_auth_conditional=bool(args.allow_unknown_auth_conditional),
+            verify_noninteractive_contract=bool(
+                getattr(args, "verify_noninteractive_contract", False)
+            ),
         )
 
         if getattr(args, "generate_selection_record", False):
@@ -1276,10 +1280,13 @@ def cmd_provider_readiness(args: argparse.Namespace) -> int:
                         f"{c.reviewer_provider_id} [{c.independence_status}]{mark}"
                     )
                     print(f"  {c.notes}")
+            if getattr(args, "show_host_system_verdict", False):
+                print(f"host_system_verdict: {bundle.host_system_verdict}")
             if args.audience:
                 print(reports.get(args.audience, ""))
             print(f"stored: {out_path}")
             print("live_provider_invocations: 0")
+            print(f"host_system_verdict: {bundle.host_system_verdict}")
         return 0
     except (PolicyError, ProjectRegistryError, FileNotFoundError, KeyError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
@@ -1900,6 +1907,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_prdy.add_argument("--validate", default=None, help="Validate/stale-check readiness_id")
     p_prdy.add_argument("--show-combinations", action="store_true")
     p_prdy.add_argument("--include-help-summary", action="store_true")
+    p_prdy.add_argument(
+        "--verify-noninteractive-contract",
+        action="store_true",
+        help="Assess noninteractive contract from help/adapter/synthetic rules only (never live prompts)",
+    )
+    p_prdy.add_argument(
+        "--show-host-system-verdict",
+        action="store_true",
+        help="Highlight Round 4D1.2 host/system final verdict enum",
+    )
     p_prdy.add_argument(
         "--allow-unknown-auth-conditional",
         action="store_true",

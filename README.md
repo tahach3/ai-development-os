@@ -1,10 +1,10 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1 **safe live-provider readiness auditing**, and Round 4D1.1 **trusted CLI ambiguity resolution** (discovery/version/help/auth-status / wrapper identity only — **no live prompts**).
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1 **safe live-provider readiness auditing**, Round 4D1.1 **trusted CLI ambiguity resolution**, and Round 4D1.2 **authentication + noninteractive readiness** (discovery/version/help/auth-status / contract assessment only — **no live prompts**).
 
-## Round 4D1.1 status
+## Round 4D1.2 status
 
-Round 4D1.1 resolves ambiguous provider CLI installations via deterministic identity, wrapper/shim inspection, logical-installation collapse (rule IDs only), host-local executable pinning (fingerprint required), and operator decision records when distinct trusted binaries remain. **PATH precedence alone is not trust. Matching versions do not prove equivalence. Pins do not enable live mode.**
+Round 4D1.2 hardens allowlisted auth-status probing (help-confirmed when safe), noninteractive contract assessment from adapter/help/synthetic fixtures (never live prompts), role/independence labeling, and a single host/system verdict. **Installed ≠ eligible. Auth unknown ≠ authenticated. Editor CLI ≠ headless agent.**
 
 **Honest status:**
 
@@ -15,11 +15,12 @@ Round 4D1.1 resolves ambiguous provider CLI installations via deterministic iden
 | Evidence-first reporting (Round 4C) | Yes — deterministic templates; no LLM summaries |
 | Provider readiness audit (Round 4D1) | Yes — **no live model invocations** |
 | CLI ambiguity resolution (Round 4D1.1) | Yes — collapse or operator selection; **no silent pick** |
+| Auth + noninteractive readiness (Round 4D1.2) | Yes — allowlisted auth-status + synthetic contract |
 | Workflow permissions | `contents: read` only |
 | Repository secrets / live provider / auto review / merge / deploy | **No** |
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
-| Package version | **0.8.1** |
+| Package version | **0.8.2** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization).
 
@@ -46,9 +47,10 @@ ai-dev-os render-report --report-id RID
 ai-dev-os validate-report --report-id RID
 ai-dev-os show-report --report-id RID --json
 
-# Round 4D1 / 4D1.1 provider readiness (no live prompts):
+# Round 4D1 / 4D1.1 / 4D1.2 provider readiness (no live prompts):
 ai-dev-os provider-readiness --project-id calculator-demo --json --show-combinations
 ai-dev-os provider-readiness --project-id calculator-demo --show-candidates --explain-ambiguity --show-logical-installations
+ai-dev-os provider-readiness --project-id calculator-demo --verify-noninteractive-contract --show-host-system-verdict
 ai-dev-os provider-readiness --validate-pin cursor
 ```
 
@@ -62,14 +64,17 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Round 4C: evidence-first audience-specific reporting (`4c.1`)
 - Round 4D1: safe provider readiness auditing (`4d1.1`) — live smoke **not** authorized
 - Round 4D1.1: trusted CLI ambiguity resolution (`4d1.1.1`) — pins/host-local only; live still **not** authorized
+- Round 4D1.2: authentication + noninteractive readiness (`4d1.2`) — package **0.8.2**; live still **not** authorized
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4D1.1 designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.1**.
+See `docs/` for architecture, Round 3A–4D1.2 designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.2**.
 
-- [`docs/PROVIDER_READINESS_STANDARD.md`](docs/PROVIDER_READINESS_STANDARD.md) — Round 4D1 / 4D1.1 readiness contract
+- [`docs/PROVIDER_READINESS_STANDARD.md`](docs/PROVIDER_READINESS_STANDARD.md) — Round 4D1 / 4D1.1 / 4D1.2 readiness contract
+- [`docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md`](docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md) — Round 4D1.2 auth + noninteractive contract
 - [`docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md`](docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md) — Round 4D1 design
 - [`docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md`](docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md) — Round 4D1.1 design
+- [`docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md`](docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md) — Round 4D1.2 design
 - [`docs/REPORTING_STANDARD.md`](docs/REPORTING_STANDARD.md) — Round 4C reporting contract
 - [`docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md`](docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md) — Round 4C design
 - [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) — master architectural direction (not all implemented)

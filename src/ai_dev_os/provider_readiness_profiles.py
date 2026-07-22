@@ -19,6 +19,8 @@ class ProviderReadinessProfile:
     noninteractive_documented: bool
     # Cursor desktop must not be treated as automation CLI.
     requires_automation_cli_proof: bool = False
+    # profile_only | help_confirmed_allowlist | never
+    auth_probe_mode: str = "profile_only"
     min_version: tuple[int, ...] | None = None
     max_version: tuple[int, ...] | None = None
     network_behavior: str = "may_contact_provider_backend"
@@ -35,14 +37,16 @@ PROFILES: dict[str, ProviderReadinessProfile] = {
         display_name="Claude Code CLI",
         version_argv=("--version",),
         help_argv=("--help",),
-        # Uncertain whether auth status is safely non-interactive → do not probe.
+        # Prefer help-confirmed allowlisted status only; never login/credential files.
         auth_argv=None,
+        auth_probe_mode="help_confirmed_allowlist",
         adapter_roles=("implementer", "repair_implementer", "planner"),
         noninteractive_documented=True,
         requires_automation_cli_proof=False,
         notes=(
             "Distinguish interactive chat from noninteractive execution; "
-            "do not assume subscription vs API-key auth; auth probe unsupported."
+            "do not assume subscription vs API-key auth; "
+            "auth probe only if help advertises allowlisted status command."
         ),
     ),
     "codex": ProviderReadinessProfile(
@@ -51,11 +55,12 @@ PROFILES: dict[str, ProviderReadinessProfile] = {
         version_argv=("--version",),
         help_argv=("--help",),
         auth_argv=None,
+        auth_probe_mode="help_confirmed_allowlist",
         adapter_roles=("reviewer", "final_verifier", "planner"),
         noninteractive_documented=True,
         notes=(
-            "Distinguish interactive vs noninteractive; auth verification unsupported "
-            "without dedicated safe status command."
+            "Distinguish interactive vs noninteractive; auth probe only when help "
+            "advertises an allowlisted read-only status command."
         ),
     ),
     "cursor": ProviderReadinessProfile(
@@ -64,6 +69,7 @@ PROFILES: dict[str, ProviderReadinessProfile] = {
         version_argv=("--version",),
         help_argv=("--help",),
         auth_argv=None,
+        auth_probe_mode="help_confirmed_allowlist",
         adapter_roles=("implementer", "repair_implementer"),
         noninteractive_documented=False,
         requires_automation_cli_proof=True,
@@ -78,6 +84,7 @@ PROFILES: dict[str, ProviderReadinessProfile] = {
         version_argv=(),
         help_argv=(),
         auth_argv=None,
+        auth_probe_mode="never",
         adapter_roles=(
             "planner",
             "implementer",
@@ -102,6 +109,7 @@ def get_profile(provider_id: str) -> ProviderReadinessProfile:
             version_argv=("--version",),
             help_argv=("--help",),
             auth_argv=None,
+            auth_probe_mode="never",
             adapter_roles=(),
             noninteractive_documented=False,
             notes="Unknown provider profile; treated as unsupported for live smoke.",

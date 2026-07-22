@@ -1,3 +1,3 @@
-"""AI Development Operating System — Round 4D1 (provider readiness auditing)."""
+"""AI Development Operating System — Round 4D1.2 (auth + noninteractive readiness)."""
 
-__version__ = "0.8.1"
+__version__ = "0.8.2"

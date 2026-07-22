@@ -84,8 +84,19 @@ Local CI, quality gates, and pull-request validation foundation:
 - Host-local executable pins (`workspace/provider_pins/`) — fingerprint required; never enable live
 - CLI: `--show-candidates`, `--explain-ambiguity`, `--show-logical-installations`, `--generate-selection-record`, `--validate-pin`
 - Design: `docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md`
-- Ambiguity/pin/selection schemas **`4d1.1.1`**; package **`0.8.1`**
+- Ambiguity/pin/selection schemas **`4d1.1.1`**; package **`0.8.1`** (superseded by 4D1.2 / `0.8.2`)
 - Live mode remains disabled; Round 4D2 requires separate authorization
+
+## Round 4D1.2 (complete) — authentication and noninteractive readiness
+
+- Allowlisted auth-status probes (profile or help-confirmed); never login/credential files
+- Noninteractive contract dimensions from adapter/help/synthetic fixtures only
+- Host/system verdict enum (`live_smoke_ready*` / auth / noninteractive / independence / not eligible)
+- CLI: `--verify-noninteractive-contract`, `--show-host-system-verdict`
+- Design: `docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md`
+- Standard: `docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md`
+- Schema/policy **`4d1.2`**; package **`0.8.2`**
+- Live mode remains disabled; Round 4D2 requires separate authorization after a `live_smoke_ready*` host verdict
 
 ## Later (only with explicit approval)
 

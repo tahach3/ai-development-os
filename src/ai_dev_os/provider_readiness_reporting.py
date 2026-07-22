@@ -29,7 +29,9 @@ def readiness_evidence_items(bundle: ReadinessAuditBundle) -> list[EvidenceItem]
                 "final_readiness_verdict": rec.final_readiness_verdict,
                 "discovery_status": rec.discovery_status,
                 "authentication_status": rec.authentication_status,
+                "auth_status_command_advertised": rec.auth_status_command_advertised,
                 "noninteractive_status": rec.noninteractive_status,
+                "noninteractive_contract": dict(rec.noninteractive_contract or {}),
                 "compatibility_status": rec.compatibility_status,
                 "implementer_eligibility": rec.implementer_eligibility,
                 "reviewer_eligibility": rec.reviewer_eligibility,
@@ -78,9 +80,13 @@ def readiness_evidence_items(bundle: ReadinessAuditBundle) -> list[EvidenceItem]
         structured_value={
             "live_provider_invocations": 0,
             "aggregate_verdict": bundle.aggregate_verdict,
+            "host_system_verdict": bundle.host_system_verdict,
             "audit_id": bundle.audit_id,
         },
-        safe_summary="live_provider_invocations=0; no model prompts executed",
+        safe_summary=(
+            f"live_provider_invocations=0; host_system_verdict={bundle.host_system_verdict}; "
+            "no model prompts executed"
+        ),
         authority_level=AuthorityLevel.AUTHORITATIVE_PERSISTED,
         verification_status=ClaimStatus.VERIFIED,
         freshness_status=FreshnessStatus.FRESH,
@@ -156,6 +162,7 @@ def render_executive_markdown(bundle: ReadinessAuditBundle) -> str:
             "# Provider Readiness — Executive Summary",
             "",
             f"- Bounded live smoke ready: {'conditional/yes' if smoke_ready else 'no'} ({bundle.aggregate_verdict})",
+            f"- Host system verdict: `{bundle.host_system_verdict}`",
             f"- Ambiguity resolved: {'yes' if ambiguity_notes and not selection_needed else ('partial/no' if ambiguity_notes else 'n/a')}",
             f"- Human executable selection required: {'yes' if selection_needed else 'no'}",
             f"- Recommended candidate: {recommended_cand or 'n/a'}",
@@ -174,6 +181,7 @@ def render_operator_markdown(bundle: ReadinessAuditBundle) -> str:
         "# Provider Readiness — Operator Report",
         "",
         f"Aggregate verdict: `{bundle.aggregate_verdict}`",
+        f"Host system verdict: `{bundle.host_system_verdict}`",
         "",
         "## Providers",
     ]
@@ -181,7 +189,8 @@ def render_operator_markdown(bundle: ReadinessAuditBundle) -> str:
         lines.append(
             f"- **{r.provider_id}**: {r.final_readiness_verdict} "
             f"(discovery={r.discovery_status}, auth={r.authentication_status}, "
-            f"noninteractive={r.noninteractive_status})"
+            f"noninteractive={r.noninteractive_status}, "
+            f"auth_advertised={r.auth_status_command_advertised})"
         )
         for b in r.blockers:
             lines.append(f"  - blocker: {b}")

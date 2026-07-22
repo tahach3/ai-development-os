@@ -15,6 +15,7 @@ This OS is **not** zero-click automation.
 - Round 4C **evidence-first report build/render/validate** from persisted/synthetic evidence bundles (no LLM; no network required to render)
 - Round 4D1 **provider readiness audit** (`provider-readiness`) — discovery/version/help/auth-status only; never live prompts
 - Round 4D1.1 **ambiguity resolution** — wrapper identity / logical installations / optional host-local pins; never live prompts; never silent selection of distinct trusted binaries
+- Round 4D1.2 **auth + noninteractive contract** — allowlisted auth-status + synthetic/help/adapter assessment; never live prompts; never credential-file reads
 
 ## What always requires a human
 
@@ -31,6 +32,7 @@ This OS is **not** zero-click automation.
 - Interpreting incomplete / conflicting / blocked / stale reports and deciding next actions
 - Interpreting readiness blockers (auth unknown, ambiguous installs, noninteractive gaps) before Round 4D2
 - Approving a specific provider executable candidate when distinct trusted installations remain (Round 4D1.1)
+- Interpreting host/system verdict and authenticating out-of-band when auth verification is unsupported (Round 4D1.2)
 - Broadening GitHub Actions permissions, adding repository secrets, live provider CI steps, deploy, or auto-merge (Round 4B validated remote CI only under `contents: read`)
 
 ## Adapter contracts
