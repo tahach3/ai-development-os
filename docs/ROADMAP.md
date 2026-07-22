@@ -4,7 +4,7 @@
 
 Foundation: registry, tasks, lifecycle, routing, budgets, context, git inspect, manual adapters, reports, behavioral metrics, CLI, docs, tests.
 
-## Round 2 (this release)
+## Round 2
 
 - Plan artifacts + approval gates (create/validate/submit/approve/reject/show)
 - Fingerprints and approval invalidation
@@ -16,12 +16,24 @@ Foundation: registry, tasks, lifecycle, routing, budgets, context, git inspect, 
 - Open-source reference assessment (patterns only)
 - Extended project-status
 
-## Round 3+ (only with explicit approval)
+## Round 3A (this release)
 
+Safe execution foundation (no provider CLI spawn yet):
+
+- Isolated session + worktree lifecycle for registered synthetic projects
+- Allowlisted subprocess (`shell=False`, pytest profile only)
+- Path confinement + symlink-escape checks
+- Env filtering, timeouts, output-size limits
+- Normalized execution envelopes + audit JSON
+- CLI: `create-session`, `show-session`, `list-sessions`, `cleanup-session`, `run-tests`, `show-execution`
+- Design: `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md`
+
+## Round 3B+ (only with explicit approval)
+
+- Real provider CLI adapters (Claude / Cursor / Codex), still no unpaid/unapproved network model spend without approval
+- Broader command profiles beyond pytest
 - Equitify connection after the exact user command
-- Git worktrees / sessions (Agent Orchestrator-inspired)
-- Real provider CLI adapters (MCO-inspired), still no unpaid/unapproved network model spend without approval
-- Any future automation beyond manual handoff
+- Any future automation beyond manual handoff + local allowlisted exec
 
 ## Explicitly deferred
 
@@ -29,5 +41,5 @@ Foundation: registry, tasks, lifecycle, routing, budgets, context, git inspect, 
 - Paid API adapters
 - Browser automation
 - Auto-merge / auto-push
-- Self-modifying routing rules
+- Self-modifying routing / safety rules
 - Copying third-party orchestrator code into this repo

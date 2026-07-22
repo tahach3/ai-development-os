@@ -22,6 +22,7 @@ from .fingerprints import (
     fingerprint_plan,
     fingerprint_task,
 )
+from .execution_audit import ExecutionAuditStore
 from .git_safety import inspect_repo
 from .handoffs import prepare_role_handoff
 from .lifecycle_gates import (
@@ -52,6 +53,8 @@ from .repair_rounds import RepairRoundStore, load_max_repair_rounds
 from .report_store import ReportStore
 from .review_gate import apply_review_verdict
 from .routing import apply_routing, route_task
+from .session_exec import run_session_tests
+from .session_store import SessionError, SessionStore
 from .task_store import TaskStore
 from .validation import (
     ValidationError,
@@ -91,6 +94,8 @@ def cmd_init(_args: argparse.Namespace) -> int:
         "workspace/context",
         "workspace/plans",
         "workspace/repair_rounds",
+        "workspace/sessions",
+        "workspace/executions",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     registry_path = root / "config" / "projects.yaml"
@@ -634,10 +639,110 @@ def cmd_project_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_create_session(args: argparse.Namespace) -> int:
+    store = SessionStore()
+    try:
+        record = store.create(
+            project_id=args.project_id,
+            task_id=args.task_id,
+            session_id=args.session_id,
+        )
+    except (SessionError, ProjectRegistryError, ValidationError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"Created session {record.session_id}")
+    print(f"  project_id: {record.project_id}")
+    print(f"  starting_commit: {record.starting_commit}")
+    print(f"  worktree_path: {record.worktree_path}")
+    print(f"  status: {record.status.value}")
+    return 0
+
+
+def cmd_show_session(args: argparse.Namespace) -> int:
+    store = SessionStore()
+    try:
+        record = store.load(args.session_id)
+    except SessionError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    else:
+        print(f"Session: {record.session_id}")
+        print(f"  project_id: {record.project_id}")
+        print(f"  task_id: {record.task_id}")
+        print(f"  status: {record.status.value}")
+        print(f"  starting_commit: {record.starting_commit}")
+        print(f"  worktree_path: {record.worktree_path}")
+        print(f"  project_root: {record.project_root}")
+    return 0
+
+
+def cmd_list_sessions(_args: argparse.Namespace) -> int:
+    store = SessionStore()
+    sessions = store.list_sessions()
+    if not sessions:
+        print("No sessions.")
+        return 0
+    for record in sessions:
+        print(
+            f"{record.session_id}  project={record.project_id}  "
+            f"status={record.status.value}  commit={record.starting_commit[:12]}"
+        )
+    return 0
+
+
+def cmd_cleanup_session(args: argparse.Namespace) -> int:
+    store = SessionStore()
+    try:
+        record = store.cleanup(args.session_id)
+    except SessionError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"Cleaned session {record.session_id} status={record.status.value}")
+    print(f"  worktree_path: {record.worktree_path}")
+    return 0
+
+
+def cmd_run_tests(args: argparse.Namespace) -> int:
+    try:
+        envelope = run_session_tests(
+            args.session_id,
+            test_paths=list(args.test_path or []) or None,
+            timeout=args.timeout,
+            output_limit_bytes=args.output_limit,
+        )
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"execution_id: {envelope.execution_id}")
+    print(f"policy_decision: {envelope.policy_decision.value}")
+    print(f"execution_status: {envelope.execution_status.value}")
+    print(f"exit_code: {envelope.exit_code}")
+    print(f"timeout_status: {envelope.timeout_status}")
+    print(f"automation_status: {envelope.automation_status}")
+    if envelope.rejection_reason:
+        print(f"rejection_reason: {envelope.rejection_reason}")
+    if args.json:
+        print(json.dumps(envelope.to_dict(), indent=2, sort_keys=True))
+    return 0 if envelope.policy_decision.value == "allow" and envelope.execution_status.value == "success" else 1
+
+
+def cmd_show_execution(args: argparse.Namespace) -> int:
+    store = ExecutionAuditStore()
+    try:
+        envelope = store.load(args.execution_id)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(envelope.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai-dev-os",
-        description="AI Development Operating System (Round 2)",
+        description="AI Development Operating System (Round 3A)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -794,6 +899,47 @@ def build_parser() -> argparse.ArgumentParser:
     p_ps = sub.add_parser("project-status", help="Show project and task status")
     p_ps.add_argument("--project-id")
     p_ps.set_defaults(func=cmd_project_status)
+
+    p_cs = sub.add_parser(
+        "create-session",
+        help="Create isolated worktree session for a registered project",
+    )
+    p_cs.add_argument("--project-id", required=True)
+    p_cs.add_argument("--task-id", default=None)
+    p_cs.add_argument("--session-id", default=None)
+    p_cs.set_defaults(func=cmd_create_session)
+
+    p_ss = sub.add_parser("show-session", help="Show session record")
+    p_ss.add_argument("--session-id", required=True)
+    p_ss.add_argument("--json", action="store_true")
+    p_ss.set_defaults(func=cmd_show_session)
+
+    p_ls = sub.add_parser("list-sessions", help="List isolated sessions")
+    p_ls.set_defaults(func=cmd_list_sessions)
+
+    p_cl = sub.add_parser("cleanup-session", help="Remove session worktree safely")
+    p_cl.add_argument("--session-id", required=True)
+    p_cl.set_defaults(func=cmd_cleanup_session)
+
+    p_rt = sub.add_parser(
+        "run-tests",
+        help="Run allowlisted targeted pytest inside a session worktree",
+    )
+    p_rt.add_argument("--session-id", required=True)
+    p_rt.add_argument(
+        "--test-path",
+        action="append",
+        default=[],
+        help="Relative test path under the session worktree (repeatable)",
+    )
+    p_rt.add_argument("--timeout", type=float, default=None)
+    p_rt.add_argument("--output-limit", type=int, default=None)
+    p_rt.add_argument("--json", action="store_true")
+    p_rt.set_defaults(func=cmd_run_tests)
+
+    p_se = sub.add_parser("show-execution", help="Show persisted execution envelope")
+    p_se.add_argument("--execution-id", required=True)
+    p_se.set_defaults(func=cmd_show_execution)
 
     return parser
 

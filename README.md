@@ -1,19 +1,20 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff only**.
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff only**, plus Round 3A **safe local execution** (isolated sessions / worktrees / allowlisted pytest).
 
-## Round 2 scope
+## Round 3A scope
 
-Extends Round 1 with plan artifacts, approval gates, fingerprints, role-specific handoffs, review verdict gates, repair-round limits, synthetic calculator demo, and extended project-status.
+Adds isolated session records, confined Git worktrees for registered synthetic projects, allowlisted subprocess execution (`python -m pytest` only via argument arrays), env filtering, timeouts, output caps, normalized execution envelopes, and audit persistence.
 
-**Not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, network calls from the product, Equitify integration, worktrees (Round 3), real agent CLI adapters (Round 3), executing generated code, auto-approving high-risk work.
+**Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, network model calls, Equitify integration, spawning Claude/Cursor/Codex CLIs, auto-merge/push, arbitrary shell.
 
-Open-source references were reviewed for patterns only — see `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`. No third-party orchestrator code was copied; no new dependencies were added from those projects.
+Open-source references were reviewed for patterns only — see `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`. Design: `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md`.
 
 ## Requirements
 
 - Python 3.11+
 - Dependencies: PyYAML (+ pytest for dev)
+- Git (for session worktrees)
 
 ## Install
 
@@ -22,7 +23,7 @@ cd C:\Users\Taha\ai-development-os
 pip install -e ".[dev]"
 ```
 
-## Quick start (Round 2)
+## Quick start (Round 2 lifecycle)
 
 ```bash
 ai-dev-os init
@@ -36,6 +37,19 @@ ai-dev-os approve-plan --plan-id plan-1 --approver human-operator
 ai-dev-os prepare-handoff --task-id calc-multiply --role cursor
 ai-dev-os project-status --project-id calculator-demo
 ```
+
+## Safe execution (Round 3A)
+
+`calculator-demo` must be a Git repository (initialize once if needed). Then:
+
+```bash
+ai-dev-os create-session --project-id calculator-demo --session-id calc-sess-1
+ai-dev-os run-tests --session-id calc-sess-1 --test-path tests/test_ops.py
+ai-dev-os show-execution --execution-id <id-from-run-tests>
+ai-dev-os cleanup-session --session-id calc-sess-1
+```
+
+No freeform shell strings are accepted — only allowlisted argv profiles.
 
 ## Tests
 
@@ -51,6 +65,6 @@ Equitify (`equitify-machine`) is **not** registered and must not be opened, insp
 
 ## Docs
 
-Project chronicle (everything to date): [`docs/PROJECT_CHRONICLE.md`](docs/PROJECT_CHRONICLE.md).
+Project chronicle: [`docs/PROJECT_CHRONICLE.md`](docs/PROJECT_CHRONICLE.md) (export copy: [`exports/AI_Development_OS_Project_Chronicle.md`](exports/AI_Development_OS_Project_Chronicle.md)).
 
-See `docs/` for architecture, open-source assessment, boundaries, model roles, security, zero-click limits, and roadmap.
+See `docs/` for architecture, Round 3A design, open-source assessment, boundaries, security, and roadmap.
