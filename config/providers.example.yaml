@@ -1,0 +1,33 @@
+# Example provider configuration (Round 3B).
+# Copy to providers.yaml only if you intend to change defaults.
+# Shipped runtime default (missing file) is fail-closed: all disabled.
+schema_version: "3b.1"
+default_mode: disabled
+providers:
+  simulated:
+    provider_id: simulated
+    enabled: true
+    mode: simulated
+    allow_live: false
+    notes: "Deterministic fixtures for synthetic validation only."
+  claude_code:
+    provider_id: claude_code
+    enabled: false
+    mode: disabled
+    allow_live: false
+    executable_path: null
+    notes: "Adapter implemented; live not authorized."
+  codex:
+    provider_id: codex
+    enabled: false
+    mode: disabled
+    allow_live: false
+    executable_path: null
+    notes: "Adapter implemented; live not authorized."
+  cursor:
+    provider_id: cursor
+    enabled: false
+    mode: disabled
+    allow_live: false
+    executable_path: null
+    notes: "Manual handoff unless a safe CLI is detected; live not authorized."

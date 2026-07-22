@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/provider_result.schema.json",
+  "title": "ProviderResultEnvelope",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "request_id",
+    "provider_id",
+    "adapter_version",
+    "task_id",
+    "plan_id",
+    "project_id",
+    "session_id",
+    "worktree_id",
+    "role",
+    "invocation_mode",
+    "automation_status",
+    "executable_identity",
+    "sanitized_argument_array",
+    "request_fingerprint",
+    "context_or_handoff_fingerprint",
+    "approved_plan_fingerprint",
+    "starting_commit",
+    "provider_result_status",
+    "failure_class",
+    "policy_decision",
+    "retry_count",
+    "duplicate_request_status",
+    "timeout_status",
+    "cancellation_status",
+    "stdout_truncated",
+    "stderr_truncated"
+  ],
+  "properties": {
+    "schema_version": { "const": "3b.1" },
+    "provider_result_status": {
+      "type": "string",
+      "enum": ["success", "failed", "rejected", "timeout", "cancelled", "error", "duplicate"]
+    },
+    "failure_class": { "type": "string" },
+    "policy_decision": { "type": "string", "enum": ["allow", "deny"] }
+  }
+}

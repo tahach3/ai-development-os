@@ -1,70 +1,54 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff only**, plus Round 3A **safe local execution** (isolated sessions / worktrees / allowlisted pytest).
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest execution**, and Round 3B **controlled provider CLI adapters** (discovery / simulated / gated — **no live model calls by default**).
 
-## Round 3A scope
+## Round 3B scope
 
-Adds isolated session records, confined Git worktrees for registered synthetic projects, allowlisted subprocess execution (`python -m pytest` only via argument arrays), env filtering, timeouts, output caps, normalized execution envelopes, and audit persistence.
+Adds provider-neutral adapter contracts, safe CLI discovery (version/help only, no install), fail-closed provider config, a deterministic **simulated** provider with fixtures, CLI adapter shells for Claude Code / Codex / Cursor, normalized provider result envelopes, and operator CLI for list/discover/preview/simulate/status/cancel.
 
-**Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, network model calls, Equitify integration, spawning Claude/Cursor/Codex CLIs, auto-merge/push, arbitrary shell.
+**Status distinctions (important):**
 
-Open-source references were reviewed for patterns only — see `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`. Design: `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md`.
+| Claim | Round 3B |
+| --- | --- |
+| Adapter implemented | Yes — `simulated`, `claude_code`, `codex`, `cursor` |
+| CLI detected | Only if present on PATH / configured path (honest reporting) |
+| Provider capability verified | Discovery/version only; noninteractive Cursor **not** assumed |
+| Simulated execution verified | Yes — fixtures + policy/session/audit paths |
+| Live execution authorized | **No** — separately authorized smoke only |
 
-## Requirements
+**Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push, silent CLI installs, credential inspection.
 
-- Python 3.11+
-- Dependencies: PyYAML (+ pytest for dev)
-- Git (for session worktrees)
-
-## Install
+## Install (dev)
 
 ```bash
 cd C:\Users\Taha\ai-development-os
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 ```
 
-## Quick start (Round 2 lifecycle)
+## Quick start
 
 ```bash
 ai-dev-os init
-ai-dev-os register-project --id calculator-demo --name "Calculator Demo" --root C:\Users\Taha\ai-development-os\demo_projects\calculator-demo
-ai-dev-os create-task --project-id calculator-demo --id calc-multiply --title "Add multiplication" --description "Add multiply with tests" --complexity small --risk-level low
-ai-dev-os set-task-status --task-id calc-multiply --status ready_for_planning
-ai-dev-os route-task --task-id calc-multiply
-ai-dev-os create-plan --task-id calc-multiply --plan-id plan-1 --planner-agent claude --objective "Add multiply" --file-expected calculator/ops.py --step "implement" --test "pytest -q"
-ai-dev-os submit-plan --plan-id plan-1
-ai-dev-os approve-plan --plan-id plan-1 --approver human-operator
-ai-dev-os prepare-handoff --task-id calc-multiply --role cursor
-ai-dev-os project-status --project-id calculator-demo
+ai-dev-os register-project --id calculator-demo --name "Calculator Demo" --root demo_projects/calculator-demo
+# … Round 2 plan approval + Round 3A session as needed …
+
+ai-dev-os list-provider-adapters
+ai-dev-os discover-providers
+ai-dev-os show-provider-config
+# Enable simulated provider in config (see config/providers.example.yaml) before:
+# ai-dev-os run-simulated-provider --task-id … --plan-id … --session-id … --fixture success_impl
 ```
 
 ## Safe execution (Round 3A)
 
-`calculator-demo` must be a Git repository (initialize once if needed). Then:
+Isolated sessions / worktrees / allowlisted `python -m pytest` remain available (`create-session`, `run-tests`, …).
 
-```bash
-ai-dev-os create-session --project-id calculator-demo --session-id calc-sess-1
-ai-dev-os run-tests --session-id calc-sess-1 --test-path tests/test_ops.py
-ai-dev-os show-execution --execution-id <id-from-run-tests>
-ai-dev-os cleanup-session --session-id calc-sess-1
-```
+## Provider adapters (Round 3B)
 
-No freeform shell strings are accepted — only allowlisted argv profiles.
-
-## Tests
-
-```bash
-python -m pytest -q
-```
-
-## Equitify boundary
-
-Equitify (`equitify-machine`) is **not** registered and must not be opened, inspected, or integrated until you explicitly say:
-
-> Connect the AI Development Operating System to Equitify.
+- Default config is **fail-closed** (`disabled`).
+- Modes: `disabled` | `discovery_only` | `simulated` | `manual_handoff` | `live_local_cli_allowed`.
+- Live requires every gate in `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` and is **not** exercised in this round’s validation.
 
 ## Docs
 
-Project chronicle: [`docs/PROJECT_CHRONICLE.md`](docs/PROJECT_CHRONICLE.md) (export copy: [`exports/AI_Development_OS_Project_Chronicle.md`](exports/AI_Development_OS_Project_Chronicle.md)).
-
-See `docs/` for architecture, Round 3A design, open-source assessment, boundaries, security, and roadmap.
+See `docs/` for architecture, Round 3A/3B designs, security, model roles, zero-click limits, roadmap, and project chronicle.

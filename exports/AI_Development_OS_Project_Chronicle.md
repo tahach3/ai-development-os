@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.3.0` · **Round:** 3A
+**As of:** 2026-07-22 · **Package version:** `0.4.0` · **Round:** 3B
 
 ---
 
@@ -10,10 +10,11 @@ Human-oriented summary of everything shipped to date in this repository.
 ### It is
 
 - A **local-first control plane** for structured multi-model software work (Claude / Cursor / Codex).
-- A Python package (`ai-dev-os`) that validates tasks, routes them deterministically, builds **minimal** context packets, manages **plan approval gates**, writes **manual handoff** files, and (Round 3A) runs **allowlisted local pytest** in isolated worktrees.
+- A Python package (`ai-dev-os`) that validates tasks, routes them deterministically, builds **minimal** context packets, manages **plan approval gates**, writes **manual handoff** files, runs **allowlisted local pytest** in isolated worktrees (Round 3A), and (Round 3B) exposes **controlled provider CLI adapters** (discovery / simulated / gated — live not authorized by default).
 - An operator CLI plus YAML/JSON workspace artifacts under this repo’s `workspace/` directory.
 - A **manual-handoff** system: humans paste packets into external tools; results are recorded back via CLI.
 - A **safe local execution** lane: sessions, confined worktrees, env filtering, timeouts, output caps, audit envelopes.
+- A **provider adapter** lane: contracts, safe discovery, fail-closed config, simulated fixtures, CLI shells without live model calls in validation.
 
 ### It is not
 
@@ -21,7 +22,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A caller of paid LLM APIs, LangChain, CrewAI, AutoGen, or cloud workers.
 - A dashboard, browser automation layer, or network-connected orchestrator.
 - An Equitify integration (see §11).
-- A system that executes arbitrary shell, spawns Claude/Cursor/Codex CLIs, or auto-approves high-risk work.
+- A system that executes arbitrary shell, auto-approves high-risk work, or performs **live** provider model calls without separate authorization.
 
 ---
 
@@ -34,11 +35,11 @@ Human-oriented summary of everything shipped to date in this repository.
 | Frameworks | No LangChain / CrewAI / AutoGen. |
 | UI / automation | No dashboards, browser automation, or auto agent spawn. |
 | Git mutation | Inspect-only via `git_safety.py`. Round 3A additionally allows **worktree add/list/remove** only under session confinement — no reset/push/merge/commit. |
-| Adapters | Always `automation_status: manual_handoff_required`. |
+| Adapters | Manual handoff remains `manual_handoff_required`. Provider lane uses distinct automation statuses (`simulated_provider_execution`, `discovery_only`, …). |
 | Local pytest | `automation_status: local_allowlisted_execution` only after policy allow. |
 | Risk | No auto-approve for high/critical risk; no auto rule rewrite / self-improvement. |
 | Scope of work | Only projects in `config/projects.yaml`; unregistered IDs refused. |
-| Provider CLIs | Claude / Cursor / Codex are **not** spawned (deferred to Round 3B). |
+| Provider CLIs | Round 3B: discovery/version and simulated fixtures allowed; **live model execution not authorized** in this round’s validation. |
 
 Details: `docs/PROJECT_BOUNDARIES.md`, `docs/SECURITY_MODEL.md`, `docs/ZERO_CLICK_LIMITATIONS.md`.
 
@@ -194,23 +195,29 @@ python -m pytest -q
 
 ---
 
-## 10. Round 3A shipped + deferred to 3B+
+## 10. Round 3B shipped + deferred
 
 ### Round 3A (done)
 
 - Design: `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md`
-- Sessions + confined worktrees for registered synthetic projects
-- Allowlisted `python -m pytest` via argument arrays (`shell=False`)
-- Env filtering, timeouts, output limits, path/symlink confinement
-- Execution envelopes + `workspace/executions/` audit JSON
-- CLI: `create-session`, `show-session`, `list-sessions`, `cleanup-session`, `run-tests`, `show-execution`
+- Sessions + confined worktrees; allowlisted pytest; execution envelopes `3a.1`
 
-### Deferred to Round 3B+ (explicit approval)
+### Round 3B (done)
 
+- Design: `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md`
+- Provider-neutral contracts + result schema `3b.1`
+- Safe discovery (no install, no auth inspection)
+- Fail-closed provider config; simulated provider fixtures
+- CLI shells for `claude_code` / `codex` / `cursor` (live not authorized)
+- CLI: list/capabilities/discover/config/validate/preview/simulate/status/result/cancel
+- Package version `0.4.0`
+
+### Deferred (explicit approval)
+
+- Separately authorized **live** local CLI model smoke
 - Equitify connection (connect phrase only)
-- Real provider CLI adapters (Claude / Cursor / Codex spawn)
 - Broader command profiles beyond pytest
-- Automation beyond manual handoff + local allowlisted exec
+- Automation beyond manual handoff + local allowlisted exec + gated providers
 
 Still explicitly out of scope unless re-approved later:
 
@@ -241,9 +248,10 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 
 | Doc | Topic |
 | --- | --- |
-| `README.md` | Install, Round 2 + 3A quick start |
+| `README.md` | Install, Round 3B quick start |
 | `docs/ARCHITECTURE.md` | Layers and data flow |
 | `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md` | Round 3A safe execution design |
+| `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` | Round 3B provider adapter design |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |
 | `docs/ROADMAP.md` | Round sequencing |
@@ -262,4 +270,5 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `a41c0f4` | Round 2 plans, approval, fingerprints, repair, demo, OSS assessment |
 | `d4c9133` | Project chronicle (Round 1–2) |
 | `f1d1029` | Downloadable chronicle export |
-| *(Round 3A)* | Safe sessions, worktrees, allowlisted pytest, audits |
+| `eb6aba3` | Round 3A safe sessions, worktrees, allowlisted pytest, audits |
+| *(Round 3B)* | Controlled provider adapters, simulated fixtures, discovery shells |

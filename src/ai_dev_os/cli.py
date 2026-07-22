@@ -49,6 +49,9 @@ from .models import (
 )
 from .plan_store import PlanStore
 from .project_registry import ProjectRegistry, ProjectRegistryError, example_registry_path
+from .provider_config import load_provider_config
+from .provider_models import ProviderMode, SimulatedFixture
+from .provider_runner import ProviderRunner
 from .repair_rounds import RepairRoundStore, load_max_repair_rounds
 from .report_store import ReportStore
 from .review_gate import apply_review_verdict
@@ -739,10 +742,141 @@ def cmd_show_execution(args: argparse.Namespace) -> int:
     return 0
 
 
+def _provider_runner() -> ProviderRunner:
+    return ProviderRunner()
+
+
+def cmd_list_provider_adapters(_args: argparse.Namespace) -> int:
+    rows = _provider_runner().list_adapters()
+    print(json.dumps(rows, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_show_provider_capabilities(args: argparse.Namespace) -> int:
+    try:
+        caps = _provider_runner().show_capabilities(args.provider)
+    except KeyError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(caps, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_discover_providers(_args: argparse.Namespace) -> int:
+    results = _provider_runner().discover_all()
+    # Ensure no auth material — discovery dicts are already sanitized.
+    print(json.dumps(results, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_show_provider_config(_args: argparse.Namespace) -> int:
+    cfg = load_provider_config()
+    print(json.dumps(cfg.sanitized_public_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_validate_provider_request(args: argparse.Namespace) -> int:
+    runner = _provider_runner()
+    try:
+        req = runner.audit_store.load_request(args.request_id)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    result = runner.validate_request(req)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result.get("valid") else 1
+
+
+def cmd_preview_provider_invocation(args: argparse.Namespace) -> int:
+    runner = _provider_runner()
+    try:
+        if args.request_id:
+            req = runner.audit_store.load_request(args.request_id)
+        else:
+            req = runner.build_request(
+                provider_id=args.provider,
+                task_id=args.task_id,
+                plan_id=args.plan_id,
+                session_id=args.session_id,
+                role=args.role,
+                invocation_mode=ProviderMode(args.mode),
+                fixture_id=args.fixture,
+            )
+        preview = runner.preview_invocation(req)
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(preview, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_run_simulated_provider(args: argparse.Namespace) -> int:
+    runner = _provider_runner()
+    try:
+        req = runner.build_request(
+            provider_id="simulated",
+            task_id=args.task_id,
+            plan_id=args.plan_id,
+            session_id=args.session_id,
+            role=args.role,
+            invocation_mode=ProviderMode.SIMULATED,
+            fixture_id=args.fixture or SimulatedFixture.SUCCESS_IMPL.value,
+            timeout_seconds=args.timeout,
+            output_limit_bytes=args.output_limit,
+            request_id=args.request_id,
+        )
+        # Ensure simulated provider is enabled for this operator command via temp overlay
+        # only if config already enables it; otherwise refuse (fail closed).
+        envelope = runner.run_simulated(req, fixture_id=args.fixture)
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(f"request_id: {envelope.request_id}")
+    print(f"policy_decision: {envelope.policy_decision.value}")
+    print(f"provider_result_status: {envelope.provider_result_status.value}")
+    print(f"failure_class: {envelope.failure_class.value}")
+    print(f"automation_status: {envelope.automation_status}")
+    if envelope.rejection_reason:
+        print(f"rejection_reason: {envelope.rejection_reason}")
+    if args.json:
+        print(json.dumps(envelope.to_dict(), indent=2, sort_keys=True))
+    return 0 if envelope.provider_result_status.value == "success" else 1
+
+
+def cmd_show_provider_status(args: argparse.Namespace) -> int:
+    try:
+        status = _provider_runner().show_status(args.request_id)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(status, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_show_provider_result(args: argparse.Namespace) -> int:
+    try:
+        envelope = _provider_runner().show_result(args.request_id)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(envelope.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_cancel_provider_execution(args: argparse.Namespace) -> int:
+    try:
+        result = _provider_runner().cancel(args.request_id)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai-dev-os",
-        description="AI Development Operating System (Round 3A)",
+        description="AI Development Operating System (Round 3B)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -940,6 +1074,96 @@ def build_parser() -> argparse.ArgumentParser:
     p_se = sub.add_parser("show-execution", help="Show persisted execution envelope")
     p_se.add_argument("--execution-id", required=True)
     p_se.set_defaults(func=cmd_show_execution)
+
+    p_lpa = sub.add_parser(
+        "list-provider-adapters",
+        help="List provider adapters and sanitized capabilities",
+    )
+    p_lpa.set_defaults(func=cmd_list_provider_adapters)
+
+    p_spc = sub.add_parser(
+        "show-provider-capabilities",
+        help="Show capabilities for one provider adapter",
+    )
+    p_spc.add_argument("--provider", required=True)
+    p_spc.set_defaults(func=cmd_show_provider_capabilities)
+
+    p_dp = sub.add_parser(
+        "discover-providers",
+        help="Safely discover installed provider CLIs (version/help only)",
+    )
+    p_dp.set_defaults(func=cmd_discover_providers)
+
+    p_spcfg = sub.add_parser(
+        "show-provider-config",
+        help="Show sanitized provider configuration (fail-closed defaults)",
+    )
+    p_spcfg.set_defaults(func=cmd_show_provider_config)
+
+    p_vpr = sub.add_parser(
+        "validate-provider-request",
+        help="Validate bindings and gates for a stored provider request",
+    )
+    p_vpr.add_argument("--request-id", required=True)
+    p_vpr.set_defaults(func=cmd_validate_provider_request)
+
+    p_ppi = sub.add_parser(
+        "preview-provider-invocation",
+        help="Preview sanitized provider argv (no live model call)",
+    )
+    p_ppi.add_argument("--request-id")
+    p_ppi.add_argument("--provider")
+    p_ppi.add_argument("--task-id")
+    p_ppi.add_argument("--plan-id")
+    p_ppi.add_argument("--session-id")
+    p_ppi.add_argument("--role", choices=["claude", "cursor", "codex"])
+    p_ppi.add_argument(
+        "--mode",
+        default=ProviderMode.SIMULATED.value,
+        choices=[m.value for m in ProviderMode],
+    )
+    p_ppi.add_argument("--fixture", default=None)
+    p_ppi.set_defaults(func=cmd_preview_provider_invocation)
+
+    p_rsp = sub.add_parser(
+        "run-simulated-provider",
+        help="Run deterministic simulated provider (fixtures only; no live model call)",
+    )
+    p_rsp.add_argument("--task-id", required=True)
+    p_rsp.add_argument("--plan-id", required=True)
+    p_rsp.add_argument("--session-id", required=True)
+    p_rsp.add_argument("--role", choices=["claude", "cursor", "codex"])
+    p_rsp.add_argument(
+        "--fixture",
+        default=SimulatedFixture.SUCCESS_IMPL.value,
+        choices=[f.value for f in SimulatedFixture],
+    )
+    p_rsp.add_argument("--request-id", default=None)
+    p_rsp.add_argument("--timeout", type=float, default=None)
+    p_rsp.add_argument("--output-limit", type=int, default=None)
+    p_rsp.add_argument("--json", action="store_true")
+    p_rsp.set_defaults(func=cmd_run_simulated_provider)
+
+    p_sps = sub.add_parser(
+        "show-provider-status",
+        help="Show provider execution status without private prompts",
+    )
+    p_sps.add_argument("--request-id", required=True)
+    p_sps.set_defaults(func=cmd_show_provider_status)
+
+    p_spr = sub.add_parser(
+        "show-provider-result",
+        help="Show normalized provider result envelope",
+    )
+    p_spr.add_argument("--request-id", required=True)
+    p_spr.set_defaults(func=cmd_show_provider_result)
+
+    p_cpe = sub.add_parser(
+        "cancel-provider-execution",
+        help="Request cancellation of a provider execution when safely supported",
+    )
+    p_cpe.add_argument("--request-id", required=True)
+    p_cpe.set_defaults(func=cmd_cancel_provider_execution)
 
     return parser
 
