@@ -51,4 +51,6 @@ Equitify (`equitify-machine`) is **not** registered and must not be opened, insp
 
 ## Docs
 
+Project chronicle (everything to date): [`docs/PROJECT_CHRONICLE.md`](docs/PROJECT_CHRONICLE.md).
+
 See `docs/` for architecture, open-source assessment, boundaries, model roles, security, zero-click limits, and roadmap.
