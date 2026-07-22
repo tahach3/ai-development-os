@@ -30,7 +30,7 @@ Controlled provider CLI adapters:
 
 ## Round 3B+ / later (only with explicit approval)
 
-- Separately authorized **live** local CLI smoke for one provider
+- Separately authorized **live** local CLI smoke for one provider (2026-07-22 attempt: **blocked_before_execution** — no installed provider with proven noninteractive live path; Cursor PATH detection alone is insufficient; live still gated)
 - Broader command profiles beyond pytest
 - Equitify connection after the exact user command
 - Any automation beyond manual handoff + local allowlisted exec + gated providers

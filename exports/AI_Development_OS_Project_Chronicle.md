@@ -212,9 +212,22 @@ python -m pytest -q
 - CLI: list/capabilities/discover/config/validate/preview/simulate/status/result/cancel
 - Package version `0.4.0`
 
+### Round 3B live smoke (2026-07-22) — blocked before execution
+
+- **Baseline:** `master` @ `305c0d7`, package `0.4.0`, clean tree, `80 passed, 1 skipped`
+- **Authorization consumed:** exactly one separately authorized live local CLI model invocation was permitted; **zero live model requests were issued**
+- **Provider selection:** none — fail-closed
+  - `claude_code`: `not_installed`
+  - `codex`: `not_installed`
+  - `cursor`: detected on PATH (`--version` → `3.12.30`) but `supports_noninteractive=false` (desktop/PATH CLI ≠ proven automation agent path); live argv not implemented in adapter shell
+  - `simulated`: fixtures only; not a live provider
+- **Classification:** `blocked_before_execution`
+- **Limitation:** live remains gated; Round 3B shells refuse live spawn; policy `assert_live_gates` still hard-stops live until a proven noninteractive provider path exists
+- Equitify was not accessed; no provider source mutation; no retry
+
 ### Deferred (explicit approval)
 
-- Separately authorized **live** local CLI model smoke
+- Separately authorized **live** local CLI model smoke (retry only with a proven noninteractive installed provider + implemented gated live path)
 - Equitify connection (connect phrase only)
 - Broader command profiles beyond pytest
 - Automation beyond manual handoff + local allowlisted exec + gated providers
@@ -271,4 +284,4 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `d4c9133` | Project chronicle (Round 1–2) |
 | `f1d1029` | Downloadable chronicle export |
 | `eb6aba3` | Round 3A safe sessions, worktrees, allowlisted pytest, audits |
-| *(Round 3B)* | Controlled provider adapters, simulated fixtures, discovery shells |
+| `305c0d7` | Round 3B controlled provider adapters, simulated fixtures, discovery shells |
