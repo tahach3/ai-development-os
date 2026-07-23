@@ -127,6 +127,16 @@ Local CI, quality gates, and pull-request validation foundation:
 - Package **`0.8.6`**
 - Round **4D2 remains LOCKED**; Equitify disconnected
 
+## Round 4A hardening (complete) — CI history/compare + cross-platform fix
+
+- Additive layer on top of Round 4A/4E/4F; fixed `STAGE_ORDER` and CI schema **unchanged** (`4a.1`)
+- Cross-platform fix: `sanitize_executable_location` now redacts Windows/UNC paths on POSIX (privacy + determinism); fixed the one flaky/failing test this exposed on Linux
+- CI run history + regression comparison: `ci-history`, `ci-compare` (`--against-previous` exits non-zero only on a genuine new regression); reuses the existing `ci_run` schema (`4a.1`) plus a new `ci_run_comparison` schema
+- Deterministic human-readable CI reports: `ci-check --format md` / `ci-targeted --format md`
+- Reconciled with Round 4F's independently-built `ci-targeted` (kept as the single canonical implementation — already integrated with the `CIRun` envelope and flaky isolation); an earlier parallel selection module here was superseded and dropped rather than shipping two competing implementations
+- No new runtime dependency; no workflow/permission/secret/live-model/Equitify change
+- Design: `docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md`; package **`0.8.7`**
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs

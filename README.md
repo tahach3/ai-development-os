@@ -25,7 +25,8 @@ Round 4E adds deterministic multi-project boundary checks: per-project `allowed_
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
 | Round 4D2 live smoke | **LOCKED** |
-| Package version | **0.8.6** |
+| CI run history + regression compare (`ci-history`/`ci-compare`) | Yes — local, deterministic |
+| Package version | **0.8.7** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization), ACP, security scanners.
 
@@ -44,10 +45,19 @@ ai-dev-os register-project --id calculator-demo --name "Calculator Demo" --root 
 
 # Round 4A local gates:
 ai-dev-os ci-check
+ai-dev-os ci-check --format md              # human-readable summary
 ai-dev-os validate-change --base HEAD~1
 
 # Round 4E boundaries (optional; also runs inside validate-change):
 ai-dev-os ci-boundaries --path demo_projects/calculator-demo/calculator/ops.py
+
+# Round 4F ci-targeted — fast signal only; full pytest + ci-check remain authoritative:
+ai-dev-os ci-targeted --base HEAD~1
+ai-dev-os ci-targeted --base HEAD~1 --format md
+
+# CI run history + regression compare (local hardening on top of 4A/4F):
+ai-dev-os ci-history --limit 10             # list persisted CI runs (newest first)
+ai-dev-os ci-compare --against-previous     # exit 1 only if a new regression appeared
 
 # Round 4C reporting (from a persisted/synthetic evidence bundle JSON):
 ai-dev-os build-report --evidence-bundle PATH --audience executive --detail-level summary
@@ -76,11 +86,13 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Round 4D1.3: trusted Codex headless-provider readiness (`4d1.3`) — live still **not** authorized
 - Round 4E: multi-project boundary enforcement — package **0.8.5**; 4D2 still **LOCKED**
 - Round 4F: CI ergonomics (flaky isolation, coverage notes, PR `ci-targeted`) — package **0.8.6**; 4D2 still **LOCKED**
+- Round 4A hardening: cross-platform sanitize fix (Windows/UNC paths redacted on POSIX), `ci-check --format md`, CI run history + regression compare (`ci-history`/`ci-compare`) — package **0.8.7**; additive, CI schema unchanged (`4a.1`); 4D2 still **LOCKED**
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4F designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.6**.
+See `docs/` for architecture, Round 3A–4F + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.7**.
 
+- [`docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md`](docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md) — sanitize fix, history/compare, MD reports
 - [`docs/ROUND_4F_CI_ERGONOMICS_DESIGN.md`](docs/ROUND_4F_CI_ERGONOMICS_DESIGN.md) — Round 4F CI ergonomics design
 - [`docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md`](docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md) — Round 4E boundary gate design
 - [`docs/OPEN_SOURCE_ADOPTION_ROADMAP.md`](docs/OPEN_SOURCE_ADOPTION_ROADMAP.md) — OS remains authority; phased external adapters

@@ -70,7 +70,23 @@ def strip_ansi(text: str) -> str:
 
 
 def sanitize_executable_location(path: str | Path) -> str:
-    """Return a privacy-preserving location class, not the full PATH."""
+    """Return a privacy-preserving location class, not the full PATH.
+
+    Cross-platform hardening: Windows-style paths (drive letters or UNC roots)
+    are redacted deterministically even when this audit runs on POSIX, so a
+    leaked ``C:\\Users\\<name>\\...`` string never exposes the username in a
+    report regardless of the host OS. Without this, a backslash path parsed by
+    ``PosixPath`` keeps its separators as literal characters and the collapse
+    logic below cannot strip the middle segments.
+    """
+    raw = str(path)
+    if os.name != "nt" and (re.match(r"^[A-Za-z]:[\\/]", raw) or raw.startswith("\\\\")):
+        import ntpath
+
+        name = ntpath.basename(raw) or "unknown"
+        drive, _tail = ntpath.splitdrive(raw)
+        root = "unc" if raw.startswith("\\\\") else (drive.rstrip("\\/") or "win")
+        return f"path_entry/{root}/{name}"
     p = Path(path)
     try:
         resolved = p.resolve()

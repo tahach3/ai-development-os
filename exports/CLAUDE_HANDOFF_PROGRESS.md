@@ -36,6 +36,18 @@ AI Development OS (`ai-dev-os`) is a **local-first control plane** for structure
 
 ---
 
+## Addendum — Round 4E, 4F, and Round 4A hardening (package `0.8.7`)
+
+Since the last handoff snapshot, three more additive local-CI rounds shipped and were reconciled onto `master` (no new round of the live/provider track; Round 4D2 stays **LOCKED**):
+
+- **Round 4E** (`0.8.5`): multi-project boundary enforcement — `project_boundaries` in CI policy, a pure path/import checker, wired into `validate-change` and optional `ci-boundaries`.
+- **Round 4F** (`0.8.6`): CI ergonomics — opt-in `--isolate-flaky` (honesty rule: fail-then-pass → non-blocking `flaky_test_detected`, never a silent pass), `--coverage` notes (optional `[cov]` extra, never a gate), and the canonical `ci-targeted` fast-signal command (`ci_targeted.py` + `ci_pytest_ergonomics.py`, integrated with the real `CIRun` envelope).
+- **Round 4A hardening** (`0.8.7`, this pass): cross-platform fix — `sanitize_executable_location` now redacts Windows drive/UNC paths on POSIX too, closing a username-leak that also made one test red on Linux. Added `ci-history` / `ci-compare` (`ci_history.py`) to index `workspace/ci_runs/*.json` and diff two runs deterministically — `ci-compare --against-previous` exits non-zero only on a genuine new regression. Added `ci-check` / `ci-targeted --format md` for deterministic human-readable reports (`ci_report.py`), plus a `ci_run_comparison` schema (`4a.1`).
+- **Reconciliation note:** an earlier, independently-built targeted-test selector in this pass duplicated what Round 4F had already shipped as `ci-targeted`. Rather than ship two competing implementations, the earlier one (and its now-unused schema) was dropped during the merge in favor of Round 4F's, which was already tested, integrated with flaky isolation, and green on CI.
+- **Guarantees:** fixed CI `STAGE_ORDER` and `4a.1` schema unchanged throughout; no new runtime dependency beyond 4F's optional dev-only `coverage` extra; workflow permissions/secrets untouched; Equitify disconnected. Also fixed during this window: a genuine (non-flaky-isolation) root-cause bug in the Round 3C repair-simulation harness — stale `.pyc` bytecode under same-second/same-size mutation rewrites — restoring true determinism to `test_test_fail_then_repair`. Design: `docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md`, `docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md`, `docs/ROUND_4F_CI_ERGONOMICS_DESIGN.md`.
+
+---
+
 ## 1. What this project is
 
 A Python package + operator CLI that acts as the **workflow authority** for:

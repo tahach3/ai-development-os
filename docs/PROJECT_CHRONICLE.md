@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-23 · **Package version:** `0.8.6` · **Round:** 4F
+**As of:** 2026-07-23 · **Package version:** `0.8.7` · **Round:** 4F + Round 4A hardening
 
 ---
 
@@ -22,6 +22,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **provider readiness** lane (Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3): safe eligibility auditing for future live smoke — discovery/version/help/auth-status + ambiguity resolution + auth/noninteractive contracts + trusted Codex headless path; never live prompts.
 - A **multi-project boundary** lane (Round 4E): deterministic path/import boundary checks via `project_boundaries` in CI policy, `validate-change`, and optional `ci-boundaries` (not a mandatory `ci-check` stage).
 - A **CI ergonomics** lane (Round 4F): opt-in `--isolate-flaky` (honesty: fail-then-pass → `flaky_test_detected`), `--coverage` notes (optional `[cov]`), and PR-only `ci-targeted` fast signal.
+- A **local-CI hardening** lane (on top of 4A/4E/4F, package `0.8.7`): CI run history + regression comparison (`ci-history` / `ci-compare`), human-readable Markdown CI reports (`ci-check` / `ci-targeted --format md`), and a cross-platform executable-path redaction fix — all additive, with the fixed CI `STAGE_ORDER` and `4a.1` schema unchanged.
 
 ### It is not
 
