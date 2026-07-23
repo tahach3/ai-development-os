@@ -1064,12 +1064,33 @@ def cmd_ci_check(args: argparse.Namespace) -> int:
             base_commit=args.base,
             require_clean=bool(args.require_clean) or None,
             persist=bool(args.persist) or None,
+            isolate_flaky=bool(getattr(args, "isolate_flaky", False)),
+            coverage=bool(getattr(args, "coverage", False)),
         )
     except (CIEngineError, CIConfigError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     print(ci_run_to_json(run), end="")
     return exit_code_for_run(run)
+
+
+def cmd_ci_targeted(args: argparse.Namespace) -> int:
+    """Round 4F: targeted pytest fast-signal vs a base ref (not authoritative)."""
+    from .ci_engine import ci_run_to_json
+    from .ci_config import CIConfigError
+    from .ci_targeted import CITargetedError, exit_code_for_targeted, run_ci_targeted
+
+    try:
+        run = run_ci_targeted(
+            base=args.base,
+            isolate_flaky=bool(getattr(args, "isolate_flaky", False)),
+            persist=bool(getattr(args, "persist", False)) or None,
+        )
+    except (CITargetedError, CIConfigError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    print(ci_run_to_json(run), end="")
+    return exit_code_for_targeted(run)
 
 
 def cmd_validate_change(args: argparse.Namespace) -> int:
@@ -1835,7 +1856,38 @@ def build_parser() -> argparse.ArgumentParser:
     p_ci.add_argument("--base", default=None, help="Optional compared base commit (metadata)")
     p_ci.add_argument("--require-clean", action="store_true")
     p_ci.add_argument("--persist", action="store_true", help="Write sanitized result under workspace/ci_runs")
+    p_ci.add_argument(
+        "--isolate-flaky",
+        action="store_true",
+        help="Round 4F: on pytest fail, re-run failed node ids once (honesty: fail-then-pass → flaky_test_detected)",
+    )
+    p_ci.add_argument(
+        "--coverage",
+        action="store_true",
+        help="Round 4F: optional coverage notes only (never affects verdict; needs optional [cov] extra)",
+    )
     p_ci.set_defaults(func=cmd_ci_check)
+
+    p_cit = sub.add_parser(
+        "ci-targeted",
+        help="Round 4F: targeted pytest vs --base (fast signal; full pytest/ci-check remain authoritative)",
+    )
+    p_cit.add_argument(
+        "--base",
+        required=True,
+        help="Base ref/SHA for changed-file selection (e.g. PR base)",
+    )
+    p_cit.add_argument(
+        "--isolate-flaky",
+        action="store_true",
+        help="Same honesty-preserving flaky isolation as ci-check",
+    )
+    p_cit.add_argument(
+        "--persist",
+        action="store_true",
+        help="Write sanitized result under workspace/ci_runs",
+    )
+    p_cit.set_defaults(func=cmd_ci_targeted)
 
     p_vc = sub.add_parser(
         "validate-change",

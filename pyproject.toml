@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-dev-os"
-version = "0.8.5"
-description = "AI Development Operating System - Round 4E multi-project boundary enforcement"
+version = "0.8.6"
+description = "AI Development Operating System - Round 4F CI ergonomics"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -17,6 +17,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4",
+]
+cov = [
+    "coverage>=7",
 ]
 
 [project.scripts]

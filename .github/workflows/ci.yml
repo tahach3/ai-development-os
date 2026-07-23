@@ -1,6 +1,7 @@
 # Round 4A — Local CI parity workflow definition.
 # Round 4B — Validated on private remote tahach3/ai-development-os
 #   (first success: Actions run 29930178622). Permissions unchanged.
+# Round 4F — PR-only ci-targeted fast signal; full pytest + ci-check stay authoritative.
 #
 # Supply-chain note: actions use version tags (not immutable commit SHAs).
 # Residual risk: a tag could move. Prefer SHA pins in a later round when hashes are verified.
@@ -31,6 +32,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,6 +42,10 @@ jobs:
 
       - name: Install package (declared deps only)
         run: python -m pip install -e ".[dev]"
+
+      - name: Targeted CI (PR fast signal)
+        if: github.event_name == 'pull_request'
+        run: python -m ai_dev_os.cli ci-targeted --base ${{ github.event.pull_request.base.sha }}
 
       - name: Pytest suite
         run: python -m pytest -q

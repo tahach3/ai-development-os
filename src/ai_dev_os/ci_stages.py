@@ -205,85 +205,109 @@ def stage_python_compile(repo_root: Path, policy: CIPolicy) -> CIStageResult:
     )
 
 
-def stage_pytest_suite(repo_root: Path, policy: CIPolicy) -> tuple[CIStageResult, dict[str, int | None]]:
-    result, t0 = _begin("pytest_suite", "python -m pytest -q")
-    argv = [sys.executable, "-m", "pytest", "-q"]
-    counts: dict[str, int | None] = {
-        "tests_passed": None,
-        "tests_failed": None,
-        "tests_skipped": None,
-    }
-    try:
-        cmd = run_ci_command(
-            argv,
-            cwd=repo_root,
-            timeout=policy.clamp_timeout(None, default=policy.pytest_timeout_seconds),
-            output_limit_bytes=policy.output_limit_bytes,
-        )
-    except CICommandError as exc:
+def stage_pytest_suite(
+    repo_root: Path,
+    policy: CIPolicy,
+    *,
+    isolate_flaky: bool = False,
+    coverage: bool = False,
+    extra_paths: list[str] | None = None,
+    changed_py_files: list[str] | None = None,
+) -> tuple[CIStageResult, dict[str, int | None]]:
+    """Pytest stage. Without isolate_flaky/coverage flags, behavior matches Round 4E."""
+    from .ci_pytest_ergonomics import run_pytest_ergonomics
+
+    if not isolate_flaky and not coverage and not extra_paths:
+        # Byte-for-byte default path: same argv and failure semantics as Round 4E.
+        result, t0 = _begin("pytest_suite", "python -m pytest -q")
+        argv = [sys.executable, "-m", "pytest", "-q"]
+        counts: dict[str, int | None] = {
+            "tests_passed": None,
+            "tests_failed": None,
+            "tests_skipped": None,
+        }
+        try:
+            cmd = run_ci_command(
+                argv,
+                cwd=repo_root,
+                timeout=policy.clamp_timeout(None, default=policy.pytest_timeout_seconds),
+                output_limit_bytes=policy.output_limit_bytes,
+            )
+        except CICommandError as exc:
+            return (
+                _finish(
+                    result,
+                    t0,
+                    status=CIStageStatus.FAILED,
+                    failure_class=CIFailureClass.COMMAND_REJECTED,
+                    summary=str(exc),
+                    blocker=True,
+                    policy_decision="deny",
+                ),
+                counts,
+            )
+        text = (cmd.stdout or "") + "\n" + (cmd.stderr or "")
+        for line in reversed(text.splitlines()):
+            if "passed" in line or "failed" in line:
+                pm = re.search(r"(\d+)\s+passed", line)
+                fm = re.search(r"(\d+)\s+failed", line)
+                sm = re.search(r"(\d+)\s+skipped", line)
+                if pm or fm or sm:
+                    counts["tests_passed"] = int(pm.group(1)) if pm else 0
+                    counts["tests_failed"] = int(fm.group(1)) if fm else 0
+                    counts["tests_skipped"] = int(sm.group(1)) if sm else 0
+                    break
+        if cmd.timed_out:
+            return (
+                _finish(
+                    result,
+                    t0,
+                    status=CIStageStatus.TIMEOUT,
+                    failure_class=CIFailureClass.TIMEOUT,
+                    summary="pytest timed out",
+                    timeout=True,
+                    truncated=cmd.truncated,
+                    blocker=True,
+                ),
+                counts,
+            )
+        if cmd.exit_code != 0:
+            return (
+                _finish(
+                    result,
+                    t0,
+                    status=CIStageStatus.FAILED,
+                    failure_class=CIFailureClass.TESTS_FAILED,
+                    summary=redact_tail(text),
+                    exit_status=cmd.exit_code,
+                    truncated=cmd.truncated,
+                    blocker=True,
+                    next_action="fix failing tests before merge",
+                ),
+                counts,
+            )
         return (
             _finish(
                 result,
                 t0,
-                status=CIStageStatus.FAILED,
-                failure_class=CIFailureClass.COMMAND_REJECTED,
-                summary=str(exc),
-                blocker=True,
-                policy_decision="deny",
-            ),
-            counts,
-        )
-    text = (cmd.stdout or "") + "\n" + (cmd.stderr or "")
-    for line in reversed(text.splitlines()):
-        if "passed" in line or "failed" in line:
-            pm = re.search(r"(\d+)\s+passed", line)
-            fm = re.search(r"(\d+)\s+failed", line)
-            sm = re.search(r"(\d+)\s+skipped", line)
-            if pm or fm or sm:
-                counts["tests_passed"] = int(pm.group(1)) if pm else 0
-                counts["tests_failed"] = int(fm.group(1)) if fm else 0
-                counts["tests_skipped"] = int(sm.group(1)) if sm else 0
-                break
-    if cmd.timed_out:
-        return (
-            _finish(
-                result,
-                t0,
-                status=CIStageStatus.TIMEOUT,
-                failure_class=CIFailureClass.TIMEOUT,
-                summary="pytest timed out",
-                timeout=True,
+                status=CIStageStatus.PASSED,
+                summary=redact_tail(text) or "pytest ok",
+                exit_status=0,
                 truncated=cmd.truncated,
-                blocker=True,
             ),
             counts,
         )
-    if cmd.exit_code != 0:
-        return (
-            _finish(
-                result,
-                t0,
-                status=CIStageStatus.FAILED,
-                failure_class=CIFailureClass.TESTS_FAILED,
-                summary=redact_tail(text),
-                exit_status=cmd.exit_code,
-                truncated=cmd.truncated,
-                blocker=True,
-                next_action="fix failing tests before merge",
-            ),
-            counts,
-        )
-    return (
-        _finish(
-            result,
-            t0,
-            status=CIStageStatus.PASSED,
-            summary=redact_tail(text) or "pytest ok",
-            exit_status=0,
-            truncated=cmd.truncated,
-        ),
-        counts,
+
+    ergo = run_pytest_ergonomics(
+        repo_root,
+        policy,
+        stage_name="pytest_suite",
+        paths=extra_paths,
+        isolate_flaky=isolate_flaky,
+        coverage=coverage,
+        changed_py_files=changed_py_files,
     )
+    return ergo.stage, ergo.counts
 
 
 def redact_tail(text: str) -> str:

@@ -1,4 +1,4 @@
-﻿"""Round 3C: bounded orchestration, stalemate detection, simulated lifecycles."""
+"""Round 3C: bounded orchestration, stalemate detection, simulated lifecycles."""
 
 from __future__ import annotations
 
@@ -481,7 +481,7 @@ def test_no_secret_patterns_in_orch_artifacts(calc_orch_env):
 def test_mutation_catalog_not_provider_text(calc_orch_env):
     session = calc_orch_env["session"]
     wt = Path(session.worktree_path)
-    # Provider text must never be executed â€” only harness catalog ids.
+    # Provider text must never be executed — only harness catalog ids.
     with pytest.raises(Exception):
         apply_fixture_mutation(wt, "rm -rf /")
 
@@ -546,7 +546,7 @@ def test_stalemate_missing_evidence_fail_closed():
 def test_package_version():
     from ai_dev_os import __version__
 
-    assert __version__ == "0.8.5"
+    assert __version__ == "0.8.6"
 
 
 def test_scenarios_defined():

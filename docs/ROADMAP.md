@@ -119,6 +119,14 @@ Local CI, quality gates, and pull-request validation foundation:
 - Package **`0.8.5`**
 - Round **4D2 remains LOCKED**; Equitify disconnected; no live model/network/paid-API calls
 
+## Round 4F (complete) — CI ergonomics (local only)
+
+- Design: `docs/ROUND_4F_CI_ERGONOMICS_DESIGN.md`
+- Opt-in `--isolate-flaky` (honesty rule → `flaky_test_detected`); `--coverage` notes + optional `[cov]`
+- PR-only `ci-targeted` fast signal; full pytest + `ci-check` authoritative; `contents: read`
+- Package **`0.8.6`**
+- Round **4D2 remains LOCKED**; Equitify disconnected
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs

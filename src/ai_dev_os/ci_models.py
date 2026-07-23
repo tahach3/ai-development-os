@@ -75,6 +75,7 @@ class CIFailureClass(str, Enum):
     BOUNDARY_VIOLATION = "boundary_violation"
     BOUNDARY_CONFIG_AMBIGUOUS = "boundary_config_ambiguous"
     BOUNDARY_CONFIG_INVALID = "boundary_config_invalid"
+    FLAKY_TEST_DETECTED = "flaky_test_detected"
 
 
 STAGE_ORDER: tuple[str, ...] = (

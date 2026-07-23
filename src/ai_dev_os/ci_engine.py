@@ -54,6 +54,8 @@ def run_ci_check(
     trigger_type: str = CITriggerType.LOCAL.value,
     require_clean: bool | None = None,
     persist: bool | None = None,
+    isolate_flaky: bool = False,
+    coverage: bool = False,
 ) -> CIRun:
     """Execute fixed-order CI stages and return a normalized CIRun."""
     root = (repo_root or Path(__file__).resolve().parents[2]).resolve()
@@ -106,7 +108,25 @@ def run_ci_check(
         if name == "repo_identity":
             stage_result = func(root, pol, require_clean=require_clean)
         elif name == "pytest_suite":
-            stage_result, counts = func(root, pol)
+            changed_py: list[str] | None = None
+            if coverage and base_commit:
+                try:
+                    from .ci_pytest_ergonomics import list_changed_paths
+
+                    changed_py = [
+                        p
+                        for p in list_changed_paths(root, base_commit)
+                        if p.endswith(".py")
+                    ]
+                except Exception:  # noqa: BLE001
+                    changed_py = None
+            stage_result, counts = func(
+                root,
+                pol,
+                isolate_flaky=isolate_flaky,
+                coverage=coverage,
+                changed_py_files=changed_py,
+            )
             test_counts.update(counts)
         else:
             stage_result = func(root, pol)

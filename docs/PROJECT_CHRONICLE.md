@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-23 · **Package version:** `0.8.5` · **Round:** 4E
+**As of:** 2026-07-23 · **Package version:** `0.8.6` · **Round:** 4F
 
 ---
 
@@ -21,6 +21,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - An **evidence-first reporting** lane (Round 4C): canonical evidence, claim statuses, audience/detail renderers, deterministic relevance, integrity fingerprints (no LLM summaries).
 - A **provider readiness** lane (Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3): safe eligibility auditing for future live smoke — discovery/version/help/auth-status + ambiguity resolution + auth/noninteractive contracts + trusted Codex headless path; never live prompts.
 - A **multi-project boundary** lane (Round 4E): deterministic path/import boundary checks via `project_boundaries` in CI policy, `validate-change`, and optional `ci-boundaries` (not a mandatory `ci-check` stage).
+- A **CI ergonomics** lane (Round 4F): opt-in `--isolate-flaky` (honesty: fail-then-pass → `flaky_test_detected`), `--coverage` notes (optional `[cov]`), and PR-only `ci-targeted` fast signal.
 
 ### It is not
 
@@ -330,6 +331,16 @@ python -m pytest -q
 - Surfaced via `validate-change` and optional CLI `ci-boundaries`
 - Package version **`0.8.5`**
 - Round **4D2 remains LOCKED**; Equitify remains disconnected; no live/network/paid-API calls
+
+### Round 4F (done) — CI ergonomics (local only)
+
+- Design: `docs/ROUND_4F_CI_ERGONOMICS_DESIGN.md`
+- Opt-in `--isolate-flaky` on `ci-check` / `ci-targeted` with honesty rule (`flaky_test_detected`, never silent pass)
+- Opt-in `--coverage` notes only; optional `[cov]` extra; never a gate; graceful if absent
+- PR-only workflow step `ci-targeted --base <PR base>`; full pytest + `ci-check` remain authoritative
+- Permissions stay `contents: read`; schema **`4a.1`** / **STAGE_ORDER** unchanged
+- Package version **`0.8.6`**
+- Round **4D2 remains LOCKED**; Equitify remains disconnected
 
 ### Deferred (explicit approval)
 
