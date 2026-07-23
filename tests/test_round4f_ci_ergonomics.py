@@ -227,8 +227,8 @@ def test_stage_order_unchanged():
     assert "pytest_suite" in STAGE_ORDER
 
 
-def test_version_is_0_8_6():
-    assert __version__ == "0.8.6"
+def test_version_is_0_8_7():
+    assert __version__ == "0.8.7"
 
 
 def test_optional_cov_extra_declared():
