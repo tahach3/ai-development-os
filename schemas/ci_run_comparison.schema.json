@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-dev-os.local/schemas/ci_run_comparison.schema.json",
+  "title": "CIRunComparison",
+  "description": "Round 4A hardening: deterministic regression comparison of two CI runs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ci_policy_version",
+    "base_run_id",
+    "head_run_id",
+    "base_verdict",
+    "head_verdict",
+    "new_failure_classes",
+    "resolved_failure_classes",
+    "unchanged_failure_classes",
+    "regressed",
+    "improved",
+    "verdict_changed",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "4a.1" },
+    "ci_policy_version": { "type": "string", "const": "4a.1" },
+    "base_run_id": { "type": "string" },
+    "head_run_id": { "type": "string" },
+    "base_verdict": { "type": "string" },
+    "head_verdict": { "type": "string" },
+    "new_failure_classes": { "type": "array", "items": { "type": "string" } },
+    "resolved_failure_classes": { "type": "array", "items": { "type": "string" } },
+    "unchanged_failure_classes": { "type": "array", "items": { "type": "string" } },
+    "tests_failed_delta": { "type": ["integer", "null"] },
+    "regressed": { "type": "boolean" },
+    "improved": { "type": "boolean" },
+    "verdict_changed": { "type": "boolean" },
+    "summary": { "type": "string" }
+  }
+}

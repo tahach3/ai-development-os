@@ -36,6 +36,18 @@ AI Development OS (`ai-dev-os`) is a **local-first control plane** for structure
 
 ---
 
+## Addendum — Round 4A hardening (package `0.8.4`)
+
+Additive local-CI ergonomics layered on the existing Round 4A/4B foundation (no new round of the live/provider track; Round 4D2 stays **LOCKED**):
+
+- **Cross-platform fix:** `sanitize_executable_location` now redacts Windows drive/UNC paths on POSIX too — closed a username-leak that also made one test red on Linux (full suite now `291 passed`).
+- **Targeted tests:** `ci-targeted` runs only tests related to a change (`ci_test_selection.py`). Fail-safe: broad-impact files (`__init__`, `cli`, `models`, `config/**`, `schemas/**`) force the full suite; an empty selection never passes silently.
+- **Regression awareness:** `ci-history` / `ci-compare` (`ci_history.py`) index `workspace/ci_runs/*.json` and diff two runs; `ci-compare --against-previous` exits non-zero only on a genuine new regression.
+- **Readable reports:** `ci-check --format md` + `ci_report.py`; new schemas `ci_targeted_run` / `ci_run_comparison` (both `4a.1`).
+- **Guarantees:** fixed CI `STAGE_ORDER` and `4a.1` schema unchanged; no new runtime dependency; workflow permissions/secrets untouched; Equitify disconnected. Design: `docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md`.
+
+---
+
 ## 1. What this project is
 
 A Python package + operator CLI that acts as the **workflow authority** for:

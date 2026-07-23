@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-dev-os"
-version = "0.8.3"
-description = "AI Development Operating System — Round 4D1 provider readiness auditing"
+version = "0.8.4"
+description = "AI Development Operating System — Round 4A local-CI hardening (targeted tests, run history, reporting) on Round 4D1 readiness"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

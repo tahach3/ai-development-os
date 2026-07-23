@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-23 · **Package version:** `0.8.3` · **Round:** 4D1.3
+**As of:** 2026-07-23 · **Package version:** `0.8.4` · **Round:** 4D1.3 + Round 4A hardening
 
 ---
 
@@ -20,6 +20,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **private remote CI validation** lane (Round 4B): first successful GitHub Actions run on private repo `tahach3/ai-development-os` (no secrets, no live providers, no deploy/merge).
 - An **evidence-first reporting** lane (Round 4C): canonical evidence, claim statuses, audience/detail renderers, deterministic relevance, integrity fingerprints (no LLM summaries).
 - A **provider readiness** lane (Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3): safe eligibility auditing for future live smoke — discovery/version/help/auth-status + ambiguity resolution + auth/noninteractive contracts + trusted Codex headless path; never live prompts.
+- A **local-CI hardening** lane (Round 4A extension, package `0.8.4`): deterministic targeted / related-module test selection (`ci-targeted`), CI run history + regression comparison (`ci-history` / `ci-compare`), human-readable Markdown CI reports (`ci-check --format md`), and a cross-platform executable-path redaction fix — all additive, with the fixed CI `STAGE_ORDER` and `4a.1` schema unchanged.
 
 ### It is not
 

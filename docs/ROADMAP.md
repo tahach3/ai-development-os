@@ -111,6 +111,16 @@ Local CI, quality gates, and pull-request validation foundation:
 - Cursor remains editor-only on this host; Claude not installed; fresh-context ≠ independent review
 - ACP / scanners **not** installed; Round 4D2 remains **LOCKED**
 
+## Round 4A hardening (complete) — local-CI ergonomics + regression awareness
+
+- Additive layer on the existing Round 4A/4B local CI; fixed `STAGE_ORDER` and CI schema **unchanged** (`4a.1`)
+- Cross-platform fix: `sanitize_executable_location` now redacts Windows/UNC paths on POSIX (privacy + determinism); unblocked the full suite on Linux
+- Targeted / related-module test selection: `ci-targeted` runs only the tests related to a change; fail-safe (broad-impact files force the full suite; empty selection never passes silently)
+- CI run history + regression comparison: `ci-history`, `ci-compare` (`--against-previous` exits non-zero only on a genuine new regression)
+- Deterministic human-readable CI reports: `ci-check --format md` and new artifact schemas (`ci_targeted_run`, `ci_run_comparison`)
+- No new runtime dependency; no workflow/permission/secret/live-model/Equitify change
+- Design: `docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md`; package **`0.8.4`**
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs

@@ -1068,8 +1068,92 @@ def cmd_ci_check(args: argparse.Namespace) -> int:
     except (CIEngineError, CIConfigError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
-    print(ci_run_to_json(run), end="")
+    if getattr(args, "format", "json") == "md":
+        from .ci_report import render_ci_summary
+
+        artifact = f"workspace/ci_runs/{run.run_id}.json" if bool(args.persist) else None
+        print(render_ci_summary(run, artifact_path=artifact), end="")
+    else:
+        print(ci_run_to_json(run), end="")
     return exit_code_for_run(run)
+
+
+def cmd_ci_targeted(args: argparse.Namespace) -> int:
+    """Run only the tests related to a change (targeted / related-module gate)."""
+    from .ci_config import CIConfigError
+    from .ci_test_selection import (
+        exit_code_for_targeted_run,
+        run_targeted_tests,
+        select_related_tests,
+    )
+    from .ci_validate_change import ValidateChangeError, _git_name_status
+
+    root = _repo_root()
+    changed = list(args.changed_file or [])
+    if not changed:
+        try:
+            rows = _git_name_status(root, args.base, args.head or "HEAD")
+        except ValidateChangeError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 2
+        changed = [p for _, p in rows]
+    selection = select_related_tests(root, changed)
+    if args.select_only:
+        print(json.dumps(selection.to_dict(), indent=2, sort_keys=True))
+        return 0
+    try:
+        run = run_targeted_tests(root, selection, fallback_full=bool(args.fallback_full))
+    except CIConfigError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    if getattr(args, "format", "json") == "md":
+        from .ci_report import render_targeted_summary
+
+        print(render_targeted_summary(run.to_dict()), end="")
+    else:
+        print(json.dumps(run.to_dict(), indent=2, sort_keys=True))
+    return exit_code_for_targeted_run(run)
+
+
+def cmd_ci_history(args: argparse.Namespace) -> int:
+    """List persisted CI runs (most recent first)."""
+    from .ci_history import list_runs
+
+    entries = list_runs(_repo_root(), limit=args.limit)
+    print(json.dumps([e.to_dict() for e in entries], indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_ci_compare(args: argparse.Namespace) -> int:
+    """Compare two persisted CI runs and report regressions deterministically."""
+    from .ci_history import compare_runs, compare_to_previous, load_run
+
+    root = _repo_root()
+    if args.against_previous:
+        comparison = compare_to_previous(root)
+        if comparison is None:
+            print("ERROR: need at least two persisted runs to compare", file=sys.stderr)
+            return 2
+    else:
+        if not args.base or not args.head:
+            print(
+                "ERROR: ci-compare requires --base and --head run ids (or --against-previous)",
+                file=sys.stderr,
+            )
+            return 2
+        base = load_run(root, args.base)
+        head = load_run(root, args.head)
+        if base is None or head is None:
+            print("ERROR: run id not found in workspace/ci_runs", file=sys.stderr)
+            return 2
+        comparison = compare_runs(base, head)
+    if getattr(args, "format", "json") == "md":
+        from .ci_report import render_comparison
+
+        print(render_comparison(comparison.to_dict()), end="")
+    else:
+        print(json.dumps(comparison.to_dict(), indent=2, sort_keys=True))
+    return 1 if comparison.regressed else 0
 
 
 def cmd_validate_change(args: argparse.Namespace) -> int:
@@ -1807,7 +1891,59 @@ def build_parser() -> argparse.ArgumentParser:
     p_ci.add_argument("--base", default=None, help="Optional compared base commit (metadata)")
     p_ci.add_argument("--require-clean", action="store_true")
     p_ci.add_argument("--persist", action="store_true", help="Write sanitized result under workspace/ci_runs")
+    p_ci.add_argument(
+        "--format",
+        choices=["json", "md"],
+        default="json",
+        help="Output format: json (default) or a human-readable markdown summary",
+    )
     p_ci.set_defaults(func=cmd_ci_check)
+
+    p_cit = sub.add_parser(
+        "ci-targeted",
+        help="Run only the tests related to a change (targeted / related-module fast gate)",
+    )
+    p_cit.add_argument("--base", default=None, help="Base ref for the change range (e.g. HEAD~1)")
+    p_cit.add_argument("--head", default="HEAD", help="Head ref (default HEAD)")
+    p_cit.add_argument(
+        "--changed-file",
+        action="append",
+        default=[],
+        help="Explicit changed file (repeatable); overrides git range detection",
+    )
+    p_cit.add_argument(
+        "--select-only",
+        action="store_true",
+        help="Print the deterministic test selection without executing pytest",
+    )
+    p_cit.add_argument(
+        "--fallback-full",
+        action="store_true",
+        help="Run the full suite when no related tests are found instead of skipping",
+    )
+    p_cit.add_argument("--format", choices=["json", "md"], default="json")
+    p_cit.set_defaults(func=cmd_ci_targeted)
+
+    p_cih = sub.add_parser(
+        "ci-history",
+        help="List persisted CI runs from workspace/ci_runs (most recent first)",
+    )
+    p_cih.add_argument("--limit", type=int, default=20, help="Maximum runs to list")
+    p_cih.set_defaults(func=cmd_ci_history)
+
+    p_cmp = sub.add_parser(
+        "ci-compare",
+        help="Compare two persisted CI runs and report regressions (exit 1 if regressed)",
+    )
+    p_cmp.add_argument("--base", default=None, help="Older run id (baseline)")
+    p_cmp.add_argument("--head", default=None, help="Newer run id")
+    p_cmp.add_argument(
+        "--against-previous",
+        action="store_true",
+        help="Compare the two most recent persisted runs (previous vs latest)",
+    )
+    p_cmp.add_argument("--format", choices=["json", "md"], default="json")
+    p_cmp.set_defaults(func=cmd_ci_compare)
 
     p_vc = sub.add_parser(
         "validate-change",

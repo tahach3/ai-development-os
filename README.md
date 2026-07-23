@@ -19,7 +19,8 @@ Round 4D1.3 establishes one official OpenAI Codex CLI path on the operator host:
 | Repository secrets / live provider / auto review / merge / deploy | **No** |
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
-| Package version | **0.8.3** |
+| Local CI hardening (Round 4A ext.) | Yes — targeted tests, run history, regression compare, MD reports |
+| Package version | **0.8.4** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization), ACP, security scanners.
 
@@ -38,7 +39,14 @@ ai-dev-os register-project --id calculator-demo --name "Calculator Demo" --root 
 
 # Round 4A local gates:
 ai-dev-os ci-check
+ai-dev-os ci-check --format md              # human-readable summary
 ai-dev-os validate-change --base HEAD~1
+
+# Round 4A hardening — fast targeted gate + regression awareness:
+ai-dev-os ci-targeted --base HEAD~1         # run only tests related to the change
+ai-dev-os ci-targeted --changed-file src/ai_dev_os/routing.py --select-only
+ai-dev-os ci-history --limit 10             # list persisted CI runs (newest first)
+ai-dev-os ci-compare --against-previous     # exit 1 only if a new regression appeared
 
 # Round 4C reporting (from a persisted/synthetic evidence bundle JSON):
 ai-dev-os build-report --evidence-bundle PATH --audience executive --detail-level summary
@@ -65,10 +73,11 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Round 4D1.1: trusted CLI ambiguity resolution (`4d1.1.1`) — pins/host-local only; live still **not** authorized
 - Round 4D1.2: authentication + noninteractive readiness (`4d1.2`)
 - Round 4D1.3: trusted Codex headless-provider readiness (`4d1.3`) — package **0.8.3**; live still **not** authorized
+- Round 4A hardening: cross-platform sanitize fix, targeted/related-module tests (`ci-targeted`), CI run history + regression compare (`ci-history`/`ci-compare`), deterministic Markdown reports — package **0.8.4**; additive, CI schema unchanged (`4a.1`)
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4D1.3 designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.3**.
+See `docs/` for architecture, Round 3A–4D1.3 designs, the Round 4A local-CI + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.4**.
 
 - [`docs/OPEN_SOURCE_ADOPTION_ROADMAP.md`](docs/OPEN_SOURCE_ADOPTION_ROADMAP.md) — OS remains authority; phased external adapters
 - [`docs/PROVIDER_READINESS_STANDARD.md`](docs/PROVIDER_READINESS_STANDARD.md) — Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3 readiness contract
