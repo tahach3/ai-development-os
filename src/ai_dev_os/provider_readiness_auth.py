@@ -9,19 +9,22 @@ from typing import Sequence
 from .provider_readiness_probes import SAFE_PROBE_TOKENS, assert_probe_argv_safe
 from .safe_policy import PolicyError
 
-# Exact allowlisted auth-status argv sequences (never login/refresh).
+# Exact allowlisted auth-status argv sequences (never bare login / logout / refresh).
+# Round 4D1.3: ("login", "status") is read-only status for Codex — not an auth mutation.
 ALLOWLISTED_AUTH_ARGV: tuple[tuple[str, ...], ...] = (
+    ("login", "status"),
     ("auth", "status"),
     ("whoami",),
 )
 
 _AUTH_AD_PATTERNS: tuple[tuple[re.Pattern[str], tuple[str, ...]], ...] = (
+    (re.compile(r"(?i)\blogin\s+status\b"), ("login", "status")),
     (re.compile(r"(?i)\bauth\s+status\b"), ("auth", "status")),
     (re.compile(r"(?i)\bwhoami\b"), ("whoami",)),
 )
 
-# Help phrases that suggest interactive login — never treat as status probe.
-_LOGIN_HINT_RE = re.compile(r"(?i)\b(login|logout|sign[\s-]?in|refresh[\s-]?token|oauth)\b")
+# Help phrases that suggest interactive login mutation — not a status probe by themselves.
+_LOGIN_HINT_RE = re.compile(r"(?i)\b(logout|sign[\s-]?in|refresh[\s-]?token|oauth)\b|\blogin\b(?!\s+status)")
 
 
 @dataclass(frozen=True)

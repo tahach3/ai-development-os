@@ -17,11 +17,15 @@
     "record_fingerprint"
   ],
   "properties": {
-    "schema_version": { "const": "4d1.2" },
-    "readiness_policy_version": { "const": "4d1.2" },
-    "authentication_probe_policy_version": { "const": "4d1.2" },
-    "noninteractive_contract_policy_version": { "const": "4d1.2" },
-    "host_system_verdict_schema_version": { "const": "4d1.2" },
+    "schema_version": { "const": "4d1.3" },
+    "readiness_policy_version": { "const": "4d1.3" },
+    "authentication_probe_policy_version": { "const": "4d1.3" },
+    "noninteractive_contract_policy_version": { "const": "4d1.3" },
+    "host_system_verdict_schema_version": { "const": "4d1.3" },
+    "authentication_mode": {
+      "type": "string",
+      "enum": ["none", "chatgpt", "api_key", "unknown"]
+    },
     "live_provider_invocations": { "const": 0 },
     "discovery_status": {
       "type": "string",

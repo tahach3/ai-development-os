@@ -67,8 +67,14 @@ def _write_fake_cli(path: Path, *, version: str = "1.2.3", auth: str | None = No
                 lines.append("if \"%~1\"==\"--help\" (echo Usage: fake-cli [--version|--help] & exit /b 0)")
             if auth == "yes":
                 lines.append("if \"%~1\"==\"auth\" if \"%~2\"==\"status\" (echo logged in as user & exit /b 0)")
+                lines.append("if \"%~1\"==\"login\" if \"%~2\"==\"status\" (echo Logged in using ChatGPT & exit /b 0)")
             elif auth == "no":
                 lines.append("if \"%~1\"==\"auth\" if \"%~2\"==\"status\" (echo not logged in & exit /b 0)")
+                lines.append("if \"%~1\"==\"login\" if \"%~2\"==\"status\" (echo not logged in & exit /b 0)")
+            elif auth == "chatgpt":
+                lines.append("if \"%~1\"==\"login\" if \"%~2\"==\"status\" (echo Logged in using ChatGPT & exit /b 0)")
+            elif auth == "api_key":
+                lines.append("if \"%~1\"==\"login\" if \"%~2\"==\"status\" (echo Logged in using an API key & exit /b 0)")
             lines.append("echo unknown & exit /b 2")
             body = "\n".join(lines) + "\n"
         script.write_text(body, encoding="utf-8")
@@ -93,8 +99,14 @@ def _write_fake_cli(path: Path, *, version: str = "1.2.3", auth: str | None = No
             parts.append('  --help|help) echo "Usage: fake-cli [--version|--help]"; exit 0 ;;')
         if auth == "yes":
             parts.append('  auth) if [ "$2" = "status" ]; then echo "logged in as user"; exit 0; fi ;;')
+            parts.append('  login) if [ "$2" = "status" ]; then echo "Logged in using ChatGPT"; exit 0; fi ;;')
         elif auth == "no":
             parts.append('  auth) if [ "$2" = "status" ]; then echo "not logged in"; exit 0; fi ;;')
+            parts.append('  login) if [ "$2" = "status" ]; then echo "not logged in"; exit 0; fi ;;')
+        elif auth == "chatgpt":
+            parts.append('  login) if [ "$2" = "status" ]; then echo "Logged in using ChatGPT"; exit 0; fi ;;')
+        elif auth == "api_key":
+            parts.append('  login) if [ "$2" = "status" ]; then echo "Logged in using an API key"; exit 0; fi ;;')
         parts.extend(["  *) echo unknown; exit 2 ;;", "esac"])
         body = "\n".join(parts) + "\n"
     script.write_text(body, encoding="utf-8")
@@ -369,9 +381,9 @@ def test_auth_states(readiness_env):
         parse_status="unavailable",
         failure_class="none",
     )
-    status, _ = interpret_auth_probe(yes)
+    status, _method, _mode = interpret_auth_probe(yes)
     assert status == AuthenticationStatus.AUTHENTICATED_VERIFIED
-    status, _ = interpret_auth_probe(no)
+    status, _method, _mode = interpret_auth_probe(no)
     assert status == AuthenticationStatus.UNAUTHENTICATED_VERIFIED
 
 
@@ -447,6 +459,7 @@ def test_scenario_two_providers_separate_reviewer(readiness_env):
         },
         "codex": {
             "authentication_status": AuthenticationStatus.AUTHENTICATED_VERIFIED.value,
+            "authentication_mode": "chatgpt",
             "noninteractive_status": NoninteractiveStatus.SUPPORTED_VERIFIED.value,
             "capabilities_verified": True,
         },

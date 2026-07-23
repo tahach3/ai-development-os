@@ -93,8 +93,10 @@ Round 4D1.2 authentication / noninteractive readiness adds:
 - Orchestration schema `3c.1`; unsupported versions fail closed
 - CI schema/policy `4a.1`; unsupported versions fail closed
 - Reporting schema/policy `4c.1`; fingerprint + freshness validation fail closed
-- Provider readiness schema/policy `4d1.2` + ambiguity/pin `4d1.1.1`; staleness + zero live-invocation validation fail closed
+- Provider readiness schema/policy `4d1.3` + ambiguity/pin `4d1.1.1`; staleness + zero live-invocation validation fail closed
+- Codex ChatGPT auth mode required for Round 4D1.3 eligibility; API-key mode blocked; credential files never read
+- `codex exec` with prompts remains unauthorized until separate Round 4D2 approval
 
 ## Trust boundary
 
-Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). Round 4D1 / 4D1.1 / 4D1.2 readiness audits inspect local CLIs harmlessly and never send model prompts. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.
+Humans paste handoff packets into external tools, or operators run **simulated** provider fixtures and **simulated** orchestrations. Local CI reports sanitized aggregates only. Round 4C reports are built from persisted evidence only (no live network, no LLM). Round 4D1–4D1.3 readiness audits inspect local CLIs harmlessly and never send model prompts. The OS does not pretend external tools or GitHub Actions were invoked for live model work or remote CI unless separately authorized later.

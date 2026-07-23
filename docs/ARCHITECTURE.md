@@ -1,8 +1,8 @@
-# Architecture (Round 4D1.2)
+# Architecture (Round 4D1.3)
 
 ## Purpose
 
-AI Development OS is a **local control plane** for structured software tasks. It does not call paid model APIs by default. It validates tasks, routes them deterministically, builds minimal context packets, manages **plan approval gates**, writes **manual handoff** files, runs **allowlisted local pytest** in isolated worktrees (Round 3A), exposes **controlled provider CLI adapters** (Round 3B), runs **bounded simulated orchestration** (Round 3C), provides **local CI quality gates** plus **pull-request / change validation** (Round 4A), has **validated private remote GitHub Actions** on `tahach3/ai-development-os` (Round 4B), produces **evidence-first audience-specific reports** (Round 4C), performs **safe provider readiness auditing** (Round 4D1 — discovery/version/help/auth-status only; **zero live prompts**), **resolves trusted CLI ambiguity** (Round 4D1.1 — wrapper identity, logical installations, host-local pins, operator selection), and **assesses authentication + noninteractive contracts** (Round 4D1.2 — allowlisted auth-status + synthetic/help/adapter contract proof; **still zero live prompts**).
+AI Development OS is a **local control plane** for structured software tasks. It does not call paid model APIs by default. It validates tasks, routes them deterministically, builds minimal context packets, manages **plan approval gates**, writes **manual handoff** files, runs **allowlisted local pytest** in isolated worktrees (Round 3A), exposes **controlled provider CLI adapters** (Round 3B), runs **bounded simulated orchestration** (Round 3C), provides **local CI quality gates** plus **pull-request / change validation** (Round 4A), has **validated private remote GitHub Actions** on `tahach3/ai-development-os` (Round 4B), produces **evidence-first audience-specific reports** (Round 4C), performs **safe provider readiness auditing** (Round 4D1 — discovery/version/help/auth-status only; **zero live prompts**), **resolves trusted CLI ambiguity** (Round 4D1.1 — wrapper identity, logical installations, host-local pins, operator selection), **assesses authentication + noninteractive contracts** (Round 4D1.2), and **establishes a trusted Codex headless-provider readiness path** (Round 4D1.3 — official Codex CLI install/auth/status + JSONL/env hardening; **still zero live prompts**; Round 4D2 locked).
 
 ## Inspired by (patterns only — no copied code)
 
@@ -22,6 +22,8 @@ See `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md`.
 | Safe provider readiness / eligibility audit | — | **Round 4D1** |
 | Trusted CLI ambiguity resolution / pinning | — | **Round 4D1.1** |
 | Auth-status + noninteractive contract readiness | — | **Round 4D1.2** |
+| Trusted Codex headless-provider readiness | — | **Round 4D1.3** |
+| Open-source adoption roadmap (OS remains authority) | — | **Round 4D1.3** (`docs/OPEN_SOURCE_ADOPTION_ROADMAP.md`) |
 | Allowlisted local pytest exec | — | Round 3A |
 
 ## Layers
@@ -49,7 +51,8 @@ register-project → create-task → … → approve-plan
 
 ## Compatibility
 
-- Package version `0.8.2`
+- Package version `0.8.3`
+- Provider readiness schema/policy `4d1.3`
 - Round 3A execution envelopes remain schema `3a.1`
 - Provider results remain schema `3b.1`
 - Orchestration artifacts remain schema `3c.1`
@@ -58,7 +61,7 @@ register-project → create-task → … → approve-plan
 
 ## Future platform direction
 
-The current implemented architecture is **Round 4A/4B CI + Round 4C reporting + Round 4D1 readiness + Round 4D1.1 ambiguity resolution + Round 4D1.2 auth/noninteractive readiness** (package **0.8.2**). [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) defines longer-term platform direction; blueprint features are not implemented unless explicitly recorded in later rounds. Live provider smoke requires separate Round 4D2 authorization.
+The current implemented architecture is **Round 4A/4B CI + Round 4C reporting + Round 4D1–4D1.3 provider readiness** (package **0.8.3**), including a host-verified Codex ChatGPT headless path with live mode still disabled. See [`docs/OPEN_SOURCE_ADOPTION_ROADMAP.md`](OPEN_SOURCE_ADOPTION_ROADMAP.md). [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) remains longer-term direction only. Live provider smoke requires separate Round 4D2 authorization.
 
 Phase B1 shared-memory design: [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md). Phase B2 implementation decisions: [`SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](SHARED_MEMORY_IMPLEMENTATION_PLAN.md). **Phase B3.1** adds pure domain foundations under `src/ai_dev_os/memory/` (enums, immutable models, validation, normalization, fingerprints, auth/transitions, disabled-by-default config). No SQLite, repositories, CLI, providers, or runtime memory enablement.
 

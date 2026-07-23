@@ -290,10 +290,41 @@ class CodexCliAdapter(CliAdapterShell):
     display_basename = "codex"
     supported_roles = ["codex"]
     default_notes = (
-        "Adapter implemented. CLI detection via PATH/--version only. "
-        "Live execution not authorized."
+        "Round 4D1.3 Codex headless-provider shell. Discovery/version/help/"
+        "login-status only during readiness. Live exec with prompts not authorized. "
+        "JSONL normalization and env sanitization modules available for future 4D2."
     )
     supports_noninteractive_when_detected = True
+
+    def preview_invocation(self, request: ProviderRequest) -> dict[str, Any]:
+        context = request.context_artifact_path or "<context-artifact>"
+        # Future 4D2 shape without prompt text — never construct live exec argv here.
+        from .codex_events import build_future_codex_exec_argv
+
+        future = build_future_codex_exec_argv(
+            pinned_executable=self.display_basename,
+            worktree_path=request.worktree_id or "<approved-worktree>",
+            sandbox_mode="workspace-write",
+            prompt_text=None,
+            json_mode=True,
+            ephemeral=True,
+        )
+        argv = list(future or [self.display_basename, "preview"])
+        return {
+            "provider_id": self.provider_id,
+            "mode": request.invocation_mode.value,
+            "executable_identity": self.display_basename,
+            "sanitized_argument_array": argv,
+            "context_artifact": context,
+            "live_model_call": False,
+            "request_fingerprint": request.request_fingerprint(),
+            "note": (
+                "Preview only; prompt omitted; live model execution not authorized "
+                "until separate Round 4D2 authorization."
+            ),
+            "json_event_normalization_schema": "4d1.3",
+            "env_sanitization_policy": "4d1.3",
+        }
 
 
 class CursorCliAdapter(CliAdapterShell):

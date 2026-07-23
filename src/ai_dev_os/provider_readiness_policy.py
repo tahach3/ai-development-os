@@ -25,6 +25,7 @@ def decide_provider_verdict(
     provider_mode: str,
     provider_id: str,
     allow_unknown_auth_conditional: bool = False,
+    authentication_mode: str | None = None,
 ) -> tuple[str, list[str], list[str]]:
     """Return (verdict, blockers, warnings). Never enables live mode."""
     blockers: list[str] = []
@@ -76,6 +77,16 @@ def decide_provider_verdict(
         warnings.append("do_not_use_live_from_readiness_tooling")
         return ReadinessVerdict.POLICY_BLOCKED.value, blockers, warnings
 
+    mode = (authentication_mode or "none").lower()
+    if mode == "api_key":
+        blockers.append("unsupported_authentication_mode_api_key")
+        warnings.append("round_4d1_3_requires_chatgpt_auth_not_api_key")
+        return (
+            ReadinessVerdict.INSTALLED_BUT_AUTHENTICATION_UNVERIFIED.value,
+            blockers,
+            warnings,
+        )
+
     auth = authentication_status
     if auth in (
         AuthenticationStatus.UNKNOWN.value,
@@ -94,6 +105,19 @@ def decide_provider_verdict(
 
     if auth == AuthenticationStatus.UNAUTHENTICATED_VERIFIED.value:
         blockers.append("provider_unauthenticated")
+        return (
+            ReadinessVerdict.INSTALLED_BUT_AUTHENTICATION_UNVERIFIED.value,
+            blockers,
+            warnings,
+        )
+
+    if (
+        auth == AuthenticationStatus.AUTHENTICATED_VERIFIED.value
+        and provider_id == "codex"
+        and mode not in ("chatgpt",)
+    ):
+        # Codex Round 4D1.3: ChatGPT mode required when authenticated.
+        blockers.append("codex_chatgpt_authentication_mode_required")
         return (
             ReadinessVerdict.INSTALLED_BUT_AUTHENTICATION_UNVERIFIED.value,
             blockers,

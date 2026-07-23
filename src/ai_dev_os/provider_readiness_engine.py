@@ -11,6 +11,7 @@ from .models import utc_now_iso
 from .provider_config import ProviderConfig, fail_closed_default_config, load_provider_config
 from .provider_models import PROVIDER_ADAPTER_VERSION, ProviderMode
 from .provider_readiness_constants import (
+    AUTHENTICATION_MODE_POLICY_VERSION,
     HELP_SUMMARY_LIMIT,
     READINESS_POLICY_VERSION,
     READINESS_SCHEMA_VERSION,
@@ -324,6 +325,7 @@ class ProviderReadinessEngine:
         probes_out: list[dict[str, Any]] = []
         auth_status = AuthenticationStatus.VERIFICATION_UNSUPPORTED.value
         auth_method = "none"
+        auth_mode = "none"
         help_status = CompatibilityStatus.UNAVAILABLE.value
         version_status = CompatibilityStatus.UNAVAILABLE.value
         cli_version = None
@@ -453,13 +455,16 @@ class ProviderReadinessEngine:
                 if auth_probe.skipped:
                     auth_status = AuthenticationStatus.VERIFICATION_UNSUPPORTED.value
                     auth_method = "none"
+                    auth_mode = "none"
                 else:
-                    auth_status, auth_method = interpret_auth_probe(auth_probe)
+                    auth_status, auth_method, auth_mode = interpret_auth_probe(auth_probe)
 
             compat = version_compatible(cli_version, profile)
             if overrides.get("authentication_status"):
                 auth_status = overrides["authentication_status"]
                 auth_method = overrides.get("authentication_verification_method", auth_method)
+            if overrides.get("authentication_mode"):
+                auth_mode = str(overrides["authentication_mode"])
             if overrides.get("compatibility_status"):
                 compat = overrides["compatibility_status"]
             if overrides.get("cli_version"):
@@ -474,6 +479,8 @@ class ProviderReadinessEngine:
         if overrides.get("authentication_status") and discovery.status is not DiscoveryStatus.INSTALLED:
             auth_status = overrides["authentication_status"]
             auth_method = overrides.get("authentication_verification_method", auth_method)
+        if overrides.get("authentication_mode"):
+            auth_mode = str(overrides["authentication_mode"])
 
         if overrides.get("help_text"):
             help_summary = str(overrides["help_text"])[:HELP_SUMMARY_LIMIT]
@@ -490,9 +497,14 @@ class ProviderReadinessEngine:
         record.help_probe_status = help_status
         record.authentication_status = auth_status
         record.authentication_verification_method = auth_method
+        record.authentication_mode = auth_mode
         record.auth_status_command_advertised = bool(auth_plan.advertised)
         record.auth_status_command_runnable = bool(auth_plan.runnable)
         record.metadata["auth_probe_plan"] = auth_plan.to_dict()
+        record.metadata["authentication_mode"] = auth_mode
+        record.metadata["authentication_mode_policy_version"] = (
+            AUTHENTICATION_MODE_POLICY_VERSION
+        )
 
         # Noninteractive contract — never from live prompt.
         ni_assessment = assess_noninteractive_contract(
@@ -578,6 +590,7 @@ class ProviderReadinessEngine:
             provider_mode=mode.value,
             provider_id=provider_id,
             allow_unknown_auth_conditional=allow_unknown_auth_conditional,
+            authentication_mode=record.authentication_mode,
         )
         if profile.notes:
             warnings.append(profile.notes)

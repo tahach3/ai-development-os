@@ -35,10 +35,33 @@ SAFE_PROBE_TOKENS = frozenset(
         "auth",
         "status",
         "whoami",
+        # Only valid inside exact allowlisted sequences below.
+        "login",
+        "exec",
     }
 )
 
-# Tokens that indicate a prompt / live agent invocation — always refuse.
+# Exact argv sequences permitted even when tokens appear in FORBIDDEN_PROBE_TOKENS.
+# Bare login / exec with prompts remain forbidden via sequence + forbidden checks.
+ALLOWLISTED_PROBE_ARGV_SEQUENCES: frozenset[tuple[str, ...]] = frozenset(
+    {
+        ("--version",),
+        ("version",),
+        ("-V",),
+        ("--help",),
+        ("help",),
+        ("-h",),
+        ("auth", "status"),
+        ("whoami",),
+        ("login", "status"),
+        ("exec", "--help"),
+        ("exec", "help"),
+        ("exec", "-h"),
+    }
+)
+
+# Tokens that indicate a prompt / live agent invocation — refuse unless full argv
+# is an exact ALLOWLISTED_PROBE_ARGV_SEQUENCES entry.
 FORBIDDEN_PROBE_TOKENS = frozenset(
     {
         "prompt",
@@ -67,6 +90,10 @@ _AUTH_TRUE_RE = re.compile(
 _AUTH_FALSE_RE = re.compile(
     r"(?i)\b(not\s+logged[\s-]?in|unauthenticated|logged[\s-]?out|not\s+signed[\s-]?in)\b"
 )
+_AUTH_CHATGPT_RE = re.compile(
+    r"(?i)\b(chatgpt|chat\s*gpt|plus|pro|business|edu|enterprise|subscription)\b"
+)
+_AUTH_API_KEY_RE = re.compile(r"(?i)\b(api[\s_-]?key|openai[_-]?api[_-]?key)\b")
 
 
 def redact_probe_text(text: str, limit: int = 400) -> str:
@@ -87,7 +114,13 @@ def help_text_for_analysis(probe: ProbeRecord, *, limit: int = 4000) -> str:
 
 
 def assert_probe_argv_safe(argv_tail: Sequence[str]) -> None:
-    for token in argv_tail:
+    argv = tuple(str(t) for t in argv_tail)
+    argv_l = tuple(t.lower() for t in argv)
+    if argv in ALLOWLISTED_PROBE_ARGV_SEQUENCES or argv_l in {
+        tuple(x.lower() for x in seq) for seq in ALLOWLISTED_PROBE_ARGV_SEQUENCES
+    }:
+        return
+    for token in argv:
         low = token.lower()
         if low in FORBIDDEN_PROBE_TOKENS or token in FORBIDDEN_PROBE_TOKENS:
             raise PolicyError(f"Probe argv token refused (forbidden): {token!r}")
@@ -216,24 +249,44 @@ def skipped_probe(
     )
 
 
-def interpret_auth_probe(probe: ProbeRecord) -> tuple[AuthenticationStatus, str]:
+def interpret_authentication_mode(text: str) -> str:
+    """Classify auth mode from safe status text only (never credential files)."""
+    if _AUTH_API_KEY_RE.search(text or "") and not _AUTH_CHATGPT_RE.search(text or ""):
+        return "api_key"
+    if _AUTH_CHATGPT_RE.search(text or ""):
+        return "chatgpt"
+    if _AUTH_API_KEY_RE.search(text or ""):
+        # Both mentioned — prefer explicit API-key wording as unsupported mode.
+        return "api_key"
+    if _AUTH_TRUE_RE.search(text or ""):
+        return "unknown"
+    return "none"
+
+
+def interpret_auth_probe(
+    probe: ProbeRecord,
+) -> tuple[AuthenticationStatus, str, str]:
+    """Return (authentication_status, verification_method, authentication_mode)."""
     if probe.skipped:
-        return AuthenticationStatus.VERIFICATION_UNSUPPORTED, "skipped"
+        return AuthenticationStatus.VERIFICATION_UNSUPPORTED, "skipped", "none"
     if probe.failure_class == ReadinessFailureClass.TIMEOUT.value:
-        return AuthenticationStatus.VERIFICATION_FAILED, "timeout"
+        return AuthenticationStatus.VERIFICATION_FAILED, "timeout", "none"
     if probe.failure_class == ReadinessFailureClass.PROBE_FAILED.value and probe.exit_code not in (0, None):
         # Nonzero may still contain status text; parse carefully.
         pass
     text = probe.sanitized_output_summary or ""
+    mode = interpret_authentication_mode(text)
     if _AUTH_FALSE_RE.search(text):
-        return AuthenticationStatus.UNAUTHENTICATED_VERIFIED, "auth_status_command"
+        return AuthenticationStatus.UNAUTHENTICATED_VERIFIED, "auth_status_command", "none"
     if _AUTH_TRUE_RE.search(text):
-        return AuthenticationStatus.AUTHENTICATED_VERIFIED, "auth_status_command"
+        if mode == "none":
+            mode = "unknown"
+        return AuthenticationStatus.AUTHENTICATED_VERIFIED, "auth_status_command", mode
     if probe.exit_code == 0 and text.strip():
-        return AuthenticationStatus.UNKNOWN, "auth_status_inconclusive"
+        return AuthenticationStatus.UNKNOWN, "auth_status_inconclusive", mode if mode != "none" else "unknown"
     if probe.exit_code not in (0, None):
-        return AuthenticationStatus.VERIFICATION_FAILED, "auth_status_nonzero"
-    return AuthenticationStatus.UNKNOWN, "auth_status_inconclusive"
+        return AuthenticationStatus.VERIFICATION_FAILED, "auth_status_nonzero", "none"
+    return AuthenticationStatus.UNKNOWN, "auth_status_inconclusive", "none"
 
 
 def probe_provider(

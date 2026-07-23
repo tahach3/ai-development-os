@@ -54,13 +54,22 @@ PROFILES: dict[str, ProviderReadinessProfile] = {
         display_name="OpenAI Codex CLI",
         version_argv=("--version",),
         help_argv=("--help",),
-        auth_argv=None,
-        auth_probe_mode="help_confirmed_allowlist",
-        adapter_roles=("reviewer", "final_verifier", "planner"),
+        # Round 4D1.3: Codex exposes read-only `login status` (not bare login).
+        auth_argv=("login", "status"),
+        auth_probe_mode="profile_only",
+        adapter_roles=(
+            "implementer",
+            "repair_implementer",
+            "reviewer",
+            "final_verifier",
+            "planner",
+        ),
         noninteractive_documented=True,
         notes=(
-            "Distinguish interactive vs noninteractive; auth probe only when help "
-            "advertises an allowlisted read-only status command."
+            "Official headless implementer candidate; ChatGPT auth required for "
+            "Round 4D1.3 eligibility; distinguish interactive vs noninteractive; "
+            "never probe credential files; API-key auth mode is unsupported for "
+            "this round's live-smoke eligibility."
         ),
     ),
     "cursor": ProviderReadinessProfile(

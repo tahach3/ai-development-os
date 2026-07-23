@@ -16,6 +16,7 @@ This OS is **not** zero-click automation.
 - Round 4D1 **provider readiness audit** (`provider-readiness`) — discovery/version/help/auth-status only; never live prompts
 - Round 4D1.1 **ambiguity resolution** — wrapper identity / logical installations / optional host-local pins; never live prompts; never silent selection of distinct trusted binaries
 - Round 4D1.2 **auth + noninteractive contract** — allowlisted auth-status + synthetic/help/adapter assessment; never live prompts; never credential-file reads
+- Round 4D1.3 **Codex headless readiness** — official Codex install + ChatGPT `login status` + noninteractive help/adapter/synthetic contract; never `codex exec <prompt>`
 
 ## What always requires a human
 
@@ -23,6 +24,7 @@ This OS is **not** zero-click automation.
 - Approving plans and high/critical risk changes
 - Enabling any provider beyond fail-closed defaults
 - Authorizing any future **live** local CLI model smoke test (Round 4D2 — separate from readiness)
+- Completing Codex ChatGPT browser login when `login status` reports not logged in
 - Committing / pushing in target repositories
 - Connecting Equitify (explicit user command only)
 - Applying any behavioral recommendation (no auto rule rewrite; Round 4A recommendations remain proposed/inactive)

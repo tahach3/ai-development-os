@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-22 · **Package version:** `0.8.2` · **Round:** 4D1.2
+**As of:** 2026-07-23 · **Package version:** `0.8.3` · **Round:** 4D1.3
 
 ---
 
@@ -19,7 +19,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **local CI / PR validation** lane (Round 4A): deterministic quality gates, change-range validation, dependency-policy (not vuln DB), GitHub workflow definition.
 - A **private remote CI validation** lane (Round 4B): first successful GitHub Actions run on private repo `tahach3/ai-development-os` (no secrets, no live providers, no deploy/merge).
 - An **evidence-first reporting** lane (Round 4C): canonical evidence, claim statuses, audience/detail renderers, deterministic relevance, integrity fingerprints (no LLM summaries).
-- A **provider readiness** lane (Round 4D1 / 4D1.1 / 4D1.2): safe eligibility auditing for future live smoke — discovery/version/help/auth-status + ambiguity resolution + auth/noninteractive contracts; never live prompts.
+- A **provider readiness** lane (Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3): safe eligibility auditing for future live smoke — discovery/version/help/auth-status + ambiguity resolution + auth/noninteractive contracts + trusted Codex headless path; never live prompts.
 
 ### It is not
 
@@ -366,7 +366,7 @@ Source: `docs/ROADMAP.md`.
 
 - Added `src/ai_dev_os/memory/`: enums, immutable models, validation, normalization, hashing (reuses `fingerprints` + `ci_secrets`), typed errors, pure lifecycle transitions + authorization, disabled-by-default `MemoryConfig`
 - Memory remains **disabled**; no SQLite, migrations, repositories, services, CLI, providers, or runtime enablement
-- Package version unchanged at **0.8.1** (Round 4D1.1 baseline preserved); memory-specific constants use `memory.1`
+- Package version unchanged at **0.8.1** when B3.1 landed (Round 4D1.1 baseline); memory-specific constants use `memory.1`
 
 ---
 
@@ -397,7 +397,9 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ROUND_4D1_PROVIDER_READINESS_DESIGN.md` | Round 4D1 provider readiness design |
 | `docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md` | Round 4D1.1 CLI ambiguity resolution design |
 | `docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md` | Round 4D1.2 auth + noninteractive design |
-| `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 / 4D1.1 / 4D1.2 readiness standard / CLI contract |
+| `docs/ROUND_4D1_3_CODEX_HEADLESS_PROVIDER_DESIGN.md` | Round 4D1.3 Codex headless-provider design |
+| `docs/OPEN_SOURCE_ADOPTION_ROADMAP.md` | Open-source adoption roadmap (OS remains authority) |
+| `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3 readiness standard / CLI contract |
 | `docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md` | Round 4D1.2 auth + noninteractive standard |
 | `docs/PROJECT_BOUNDARIES.md` | Registry + Equitify rules |
 | `docs/OPEN_SOURCE_REFERENCE_ASSESSMENT.md` | OSS pattern adopt/defer |

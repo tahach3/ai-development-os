@@ -95,8 +95,21 @@ Local CI, quality gates, and pull-request validation foundation:
 - CLI: `--verify-noninteractive-contract`, `--show-host-system-verdict`
 - Design: `docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md`
 - Standard: `docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md`
-- Schema/policy **`4d1.2`**; package **`0.8.2`**
+- Schema/policy **`4d1.2`**; package **`0.8.2`** (superseded by 4D1.3 / `0.8.3`)
 - Live mode remains disabled; Round 4D2 requires separate authorization after a `live_smoke_ready*` host verdict
+
+## Round 4D1.3 (complete) — trusted Codex headless-provider readiness
+
+- Official OpenAI Codex CLI installed on the operator host (Method C: official `install.ps1` + hashed release package)
+- ChatGPT authentication verified via allowlisted `codex login status` only (no credential-file reads; no API-key mode)
+- Noninteractive contract from help + adapter docs + synthetic tests — **zero** `codex exec <prompt>`
+- Codex JSONL normalization + env sanitization modules for future Round 4D2
+- Open-source adoption roadmap persisted (`docs/OPEN_SOURCE_ADOPTION_ROADMAP.md` v1.0)
+- Design: `docs/ROUND_4D1_3_CODEX_HEADLESS_PROVIDER_DESIGN.md`
+- Schema/policy **`4d1.3`**; package **`0.8.3`**
+- Host outcome: `live_smoke_ready_with_operator_auth` / `conditionally_eligible_for_bounded_live_smoke`
+- Cursor remains editor-only on this host; Claude not installed; fresh-context ≠ independent review
+- ACP / scanners **not** installed; Round 4D2 remains **LOCKED**
 
 ## Later (only with explicit approval)
 

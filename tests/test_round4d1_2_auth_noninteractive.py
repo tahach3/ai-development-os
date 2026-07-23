@@ -79,10 +79,17 @@ def _write_fake_cli(
         lines.append(f'if "%~1"=="--help" ({help_block} & exit /b 0)')
         if auth == "yes":
             lines.append('if "%~1"=="auth" if "%~2"=="status" (echo logged in as user & exit /b 0)')
+            lines.append('if "%~1"=="login" if "%~2"=="status" (echo Logged in using ChatGPT & exit /b 0)')
         elif auth == "no":
             lines.append('if "%~1"=="auth" if "%~2"=="status" (echo not logged in & exit /b 0)')
+            lines.append('if "%~1"=="login" if "%~2"=="status" (echo not logged in & exit /b 0)')
         elif auth == "inconclusive":
             lines.append('if "%~1"=="auth" if "%~2"=="status" (echo session ok & exit /b 0)')
+            lines.append('if "%~1"=="login" if "%~2"=="status" (echo session ok & exit /b 0)')
+        elif auth == "chatgpt":
+            lines.append('if "%~1"=="login" if "%~2"=="status" (echo Logged in using ChatGPT & exit /b 0)')
+        elif auth == "api_key":
+            lines.append('if "%~1"=="login" if "%~2"=="status" (echo Logged in using an API key & exit /b 0)')
         lines.append("echo unknown & exit /b 2")
         script.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return script
@@ -100,10 +107,17 @@ def _write_fake_cli(
     parts.append("    exit 0 ;;")
     if auth == "yes":
         parts.append('  auth) if [ "$2" = "status" ]; then echo "logged in as user"; exit 0; fi ;;')
+        parts.append('  login) if [ "$2" = "status" ]; then echo "Logged in using ChatGPT"; exit 0; fi ;;')
     elif auth == "no":
         parts.append('  auth) if [ "$2" = "status" ]; then echo "not logged in"; exit 0; fi ;;')
+        parts.append('  login) if [ "$2" = "status" ]; then echo "not logged in"; exit 0; fi ;;')
     elif auth == "inconclusive":
         parts.append('  auth) if [ "$2" = "status" ]; then echo "session ok"; exit 0; fi ;;')
+        parts.append('  login) if [ "$2" = "status" ]; then echo "session ok"; exit 0; fi ;;')
+    elif auth == "chatgpt":
+        parts.append('  login) if [ "$2" = "status" ]; then echo "Logged in using ChatGPT"; exit 0; fi ;;')
+    elif auth == "api_key":
+        parts.append('  login) if [ "$2" = "status" ]; then echo "Logged in using an API key"; exit 0; fi ;;')
     parts.extend(["  *) echo unknown; exit 2 ;;", "esac"])
     script.write_text("\n".join(parts) + "\n", encoding="utf-8")
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
@@ -337,6 +351,7 @@ def test_host_system_verdict_priority(env):
             "codex": {
                 "authentication_status": AuthenticationStatus.AUTHENTICATED_VERIFIED.value,
                 "authentication_verification_method": "auth_status_command",
+                "authentication_mode": "chatgpt",
                 "synthetic_noninteractive_verified": True,
                 "noninteractive_status": NoninteractiveStatus.SUPPORTED_VERIFIED.value,
             },
@@ -416,7 +431,7 @@ def test_token_redaction_still_holds():
     from ai_dev_os.provider_readiness_probes import redact_probe_text
 
     assert "SECRET" not in redact_probe_text("token=SECRET_TOKEN_VALUE")
-    status, _ = interpret_auth_probe(
+    status, _, _ = interpret_auth_probe(
         type(
             "P",
             (),

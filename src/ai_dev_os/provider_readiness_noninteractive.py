@@ -25,8 +25,9 @@ _HEADLESS_DOC_HINTS = re.compile(
     r"(?i)("
     r"--print\b|headless|non[\s-]?interactive|stdin\b|"
     r"--output-format\b|--json\b|structured\s+output|"
-    r"--working-directory\b|--cwd\b|--workdir\b|"
-    r"--timeout\b|--max-turns\b"
+    r"--working-directory\b|--cwd\b|--workdir\b|-C\b|--cd\b|"
+    r"--timeout\b|--max-turns\b|"
+    r"--ephemeral\b|--sandbox\b|\bexec\b"
     r")"
 )
 
@@ -76,7 +77,8 @@ class NoninteractiveContractAssessment:
 # These are documentation/allowlist shapes — readiness never appends prompt text.
 DOCUMENTED_HEADLESS_ARGV_SHAPES: dict[str, tuple[str, ...]] = {
     "claude_code": ("--print", "--output-format", "json"),
-    "codex": ("exec", "--json"),
+    # Prompt text intentionally omitted from the documented shape.
+    "codex": ("exec", "--json", "--ephemeral", "--sandbox", "-C"),
     # Cursor editor has no safe headless agent argv shape in adapter allowlists.
 }
 
@@ -196,6 +198,47 @@ def assess_noninteractive_contract(
         _dim("cancellation", cancel_st, cancel_ev),
         _dim("output_limits", limits_st, limits_ev),
     ]
+
+    # Codex-specific documented capabilities (help/adapter only; never live-proven here).
+    if profile.provider_id == "codex" and (discovery_installed or synth or profile.synthetic):
+        ephemeral_doc = bool(re.search(r"(?i)--ephemeral\b", help)) or shape_ok
+        sandbox_doc = bool(re.search(r"(?i)--sandbox\b", help)) or shape_ok
+        json_doc = bool(re.search(r"(?i)--json\b", help)) or shape_ok
+        eph_st = (
+            CapabilityStatus.SUPPORTED_VERIFIED.value
+            if synth
+            else (
+                CapabilityStatus.SUPPORTED_DOCUMENTED.value
+                if ephemeral_doc
+                else CapabilityStatus.AMBIGUOUS.value
+            )
+        )
+        sb_st = (
+            CapabilityStatus.SUPPORTED_VERIFIED.value
+            if synth
+            else (
+                CapabilityStatus.SUPPORTED_DOCUMENTED.value
+                if sandbox_doc
+                else CapabilityStatus.AMBIGUOUS.value
+            )
+        )
+        js_st = (
+            CapabilityStatus.SUPPORTED_VERIFIED.value
+            if synth
+            else (
+                CapabilityStatus.SUPPORTED_DOCUMENTED.value
+                if json_doc
+                else CapabilityStatus.AMBIGUOUS.value
+            )
+        )
+        dims.extend(
+            [
+                _dim("ephemeral_session", eph_st, "codex_help_or_adapter"),
+                _dim("sandbox_control", sb_st, "codex_help_or_adapter"),
+                _dim("json_event_output", js_st, "codex_help_or_adapter"),
+            ]
+        )
+        notes.append("codex_exec_prompt_never_invoked_during_readiness")
 
     return NoninteractiveContractAssessment(
         policy_version=NONINTERACTIVE_CONTRACT_POLICY_VERSION,

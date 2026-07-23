@@ -1,4 +1,4 @@
-"""Round 4C evidence-first reporting tests (synthetic calculator-demo / temp repos)."""
+﻿"""Round 4C evidence-first reporting tests (synthetic calculator-demo / temp repos)."""
 
 from __future__ import annotations
 
@@ -239,7 +239,7 @@ def _base_bundle(**overrides) -> EvidenceBundle:
 
 
 def test_package_version_round4c():
-    assert __version__ == "0.8.2"
+    assert __version__ == "0.8.3"
 
 
 def test_canonical_evidence_and_report_serialization():
@@ -263,7 +263,7 @@ def test_deterministic_report_ids_and_fingerprints():
     assert a.report_id == b.report_id
     assert a.report_fingerprint == b.report_fingerprint
     assert a.source_set_fingerprint == b.source_set_fingerprint
-    # Fingerprint excludes generated_at volatility — same bindings yield same fp
+    # Fingerprint excludes generated_at volatility â€” same bindings yield same fp
     assert compute_report_fingerprint(a) == a.report_fingerprint
 
 

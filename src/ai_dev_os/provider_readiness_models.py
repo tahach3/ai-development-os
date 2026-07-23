@@ -273,6 +273,7 @@ class ProviderReadinessRecord:
     recommended_smoke_test_restrictions: list[str]
     record_fingerprint: str
     live_provider_invocations: int = 0
+    authentication_mode: str = "none"
     probes: list[dict[str, Any]] = field(default_factory=list)
     role_matrix: list[dict[str, Any]] = field(default_factory=list)
     audit_events: list[dict[str, Any]] = field(default_factory=list)
@@ -305,6 +306,7 @@ class ProviderReadinessRecord:
             "adapter_id": self.adapter_id,
             "adapter_version": self.adapter_version,
             "audit_events": list(self.audit_events),
+            "authentication_mode": self.authentication_mode,
             "authentication_probe_policy_version": self.authentication_probe_policy_version,
             "authentication_status": self.authentication_status,
             "authentication_verification_method": self.authentication_verification_method,
@@ -485,6 +487,7 @@ def empty_record(
         help_probe_status=CompatibilityStatus.UNAVAILABLE.value,
         authentication_status=AuthenticationStatus.VERIFICATION_UNSUPPORTED.value,
         authentication_verification_method="none",
+        authentication_mode="none",
         noninteractive_status=NoninteractiveStatus.UNAVAILABLE.value,
         noninteractive_evidence="not_assessed",
         supported_roles=[],

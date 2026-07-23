@@ -1,22 +1,25 @@
-﻿# Provider Readiness Standard (Round 4D1 / 4D1.1 / 4D1.2)
+﻿# Provider Readiness Standard (Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3)
 
-**Schema version:** `4d1.2`
-**Policy version:** `4d1.2`
-**Authentication probe policy:** `4d1.2`
-**Noninteractive contract policy:** `4d1.2`
-**Host system verdict schema:** `4d1.2`
+**Schema version:** `4d1.3`
+**Policy version:** `4d1.3`
+**Authentication probe policy:** `4d1.3`
+**Authentication mode policy:** `4d1.3`
+**Noninteractive contract policy:** `4d1.3`
+**Host system verdict schema:** `4d1.3`
 **Ambiguity / pin / selection schemas:** `4d1.1.1`
-**Package:** `0.8.2`
+**Package:** `0.8.3`
 
 ## Purpose
 
-Safely determine whether adapter-backed provider CLIs are **technically eligible** for a future bounded live orchestration smoke test (Round 4D2), without sending any model prompt. Round 4D1.1 resolves ambiguous installations. Round 4D1.2 hardens authentication-status probing and noninteractive contract verification (synthetic/help/adapter only).
+Safely determine whether adapter-backed provider CLIs are **technically eligible** for a future bounded live orchestration smoke test (Round 4D2), without sending any model prompt. Round 4D1.1 resolves ambiguous installations. Round 4D1.2 hardens authentication-status probing and noninteractive contract verification (synthetic/help/adapter only). Round 4D1.3 adds a trusted **OpenAI Codex** headless path (official install + ChatGPT `login status` + JSONL/env hardening) while keeping Round 4D2 locked.
 
 ## Hard rules
 
-- Round 4D1 / 4D1.1 / 4D1.2 perform **no** live model invocation (`live_provider_invocations: 0`).
+- Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3 perform **no** live model invocation (`live_provider_invocations: 0`).
 - **Installed ≠ eligible.**
 - **Authentication unknown ≠ authenticated** (and ≠ unauthenticated).
+- **API-key auth mode is unsupported for Round 4D1.3 Codex eligibility** (ChatGPT required).
+- **`login status` is a read-only status probe; bare `login` is not.**
 - **Help output ≠ proof of successful execution.**
 - **Simulation ≠ live provider result.**
 - **PATH precedence alone is not trust.**
@@ -24,8 +27,10 @@ Safely determine whether adapter-backed provider CLIs are **technically eligible
 - **Distinct trusted binaries require explicit operator selection** (no silent pick).
 - **Local executable pins do not enable live mode** and do not imply authentication.
 - **Editor CLI ≠ headless agent CLI.**
+- **Fresh-context same-provider review ≠ independent review.**
 - A **separate authorization** is required for Round 4D2.
 - Equitify remains **disconnected**.
+- ACP and external security scanners are **not** installed in Round 4D1.3.
 
 ## States
 
