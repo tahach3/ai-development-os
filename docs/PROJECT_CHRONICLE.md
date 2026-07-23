@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-23 · **Package version:** `0.8.7` · **Round:** 4F + Round 4A hardening
+**As of:** 2026-07-24 · **Package version:** `0.8.8` · **Round:** 4G (ci-targeted selection quality)
 
 ---
 
@@ -23,6 +23,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **multi-project boundary** lane (Round 4E): deterministic path/import boundary checks via `project_boundaries` in CI policy, `validate-change`, and optional `ci-boundaries` (not a mandatory `ci-check` stage).
 - A **CI ergonomics** lane (Round 4F): opt-in `--isolate-flaky` (honesty: fail-then-pass → `flaky_test_detected`), `--coverage` notes (optional `[cov]`), and PR-only `ci-targeted` fast signal.
 - A **local-CI hardening** lane (on top of 4A/4E/4F, package `0.8.7`): CI run history + regression comparison (`ci-history` / `ci-compare`), human-readable Markdown CI reports (`ci-check` / `ci-targeted --format md`), and a cross-platform executable-path redaction fix — all additive, with the fixed CI `STAGE_ORDER` and `4a.1` schema unchanged.
+- A **ci-targeted selection quality** lane (Round 4G, package `0.8.8`): import-string scanning for changed modules plus broad-impact fail-safe notes — never a silent empty-green selection for high-fanout paths.
 
 ### It is not
 
@@ -341,6 +342,15 @@ python -m pytest -q
 - PR-only workflow step `ci-targeted --base <PR base>`; full pytest + `ci-check` remain authoritative
 - Permissions stay `contents: read`; schema **`4a.1`** / **STAGE_ORDER** unchanged
 - Package version **`0.8.6`**
+- Round **4D2 remains LOCKED**; Equitify remains disconnected
+
+### Round 4G (done) — ci-targeted selection quality (local only)
+
+- Design: `docs/ROUND_4G_CI_TARGETED_SELECTION_DESIGN.md`
+- Import-string scanning under `tests/` for changed `src/` module dotted paths (stdlib text/regex)
+- Broad-impact fail-safe: `__init__.py`, `cli.py`, `models.py`, `config/**`, `schemas/**` → note **broad impact, full suite recommended** (never silent empty-green / silent partial)
+- Direct-name match preserved; flaky/coverage/`CIRun`/`--format md` unchanged in role
+- Package version **`0.8.8`**; schema **`4a.1`** / **STAGE_ORDER** unchanged
 - Round **4D2 remains LOCKED**; Equitify remains disconnected
 
 ### Deferred (explicit approval)

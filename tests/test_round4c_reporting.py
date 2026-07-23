@@ -239,7 +239,7 @@ def _base_bundle(**overrides) -> EvidenceBundle:
 
 
 def test_package_version_round4c():
-    assert __version__ == "0.8.7"
+    assert __version__ == "0.8.8"
 
 
 def test_canonical_evidence_and_report_serialization():

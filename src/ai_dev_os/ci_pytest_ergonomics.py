@@ -1,4 +1,4 @@
-"""Round 4F — opt-in pytest ergonomics (flaky isolation + coverage notes)."""
+"""Round 4F/4G — pytest ergonomics + ci-targeted selection quality."""
 
 from __future__ import annotations
 
@@ -476,8 +476,83 @@ def list_changed_paths(repo_root: Path, base: str, head: str = "HEAD") -> list[s
     return out
 
 
-def select_targeted_test_paths(repo_root: Path, changed: list[str]) -> list[str]:
-    """Deterministic mapping from changed files to targeted pytest paths."""
+BROAD_IMPACT_NOTE = "broad impact, full suite recommended"
+
+
+@dataclass
+class TargetedSelection:
+    """Result of ci-targeted path selection (Round 4G)."""
+
+    paths: list[str]
+    broad_impact: bool = False
+    notes: list[str] = field(default_factory=list)
+
+
+def is_broad_impact_path(path: str) -> bool:
+    """Return True when a changed path must not be narrowly targeted."""
+    norm = path.replace("\\", "/")
+    if norm.startswith("config/") or norm == "config":
+        return True
+    if norm.startswith("schemas/") or norm == "schemas":
+        return True
+    if not norm.startswith("src/") or not norm.endswith(".py"):
+        return False
+    name = Path(norm).name
+    return name in {"__init__.py", "cli.py", "models.py"}
+
+
+def src_path_to_dotted_module(path: str) -> str | None:
+    """Map ``src/pkg/mod.py`` → ``pkg.mod`` (None if not a src Python module)."""
+    norm = path.replace("\\", "/")
+    if not norm.startswith("src/") or not norm.endswith(".py"):
+        return None
+    rel = norm[len("src/") :]
+    if rel.endswith("/__init__.py"):
+        rel = rel[: -len("/__init__.py")]
+    elif rel.endswith("__init__.py"):
+        rel = ""
+    else:
+        rel = rel[: -len(".py")]
+    parts = [p for p in rel.split("/") if p]
+    if not parts:
+        return None
+    return ".".join(parts)
+
+
+def _text_references_module(text: str, dotted: str) -> bool:
+    """Conservative stdlib regex: import/from lines referencing ``dotted``."""
+    if not dotted or not text:
+        return False
+    escaped = re.escape(dotted)
+    pattern = rf"(?:from\s+{escaped}\s+import\b|\bimport\s+{escaped}\b)"
+    return re.search(pattern, text) is not None
+
+
+def _iter_test_files(repo_root: Path) -> list[str]:
+    tests_root = repo_root / "tests"
+    if not tests_root.is_dir():
+        return []
+    out: list[str] = []
+    for hit in sorted(tests_root.rglob("*.py")):
+        if not hit.is_file():
+            continue
+        name = hit.name
+        if not (name.startswith("test_") or name.endswith("_test.py")):
+            continue
+        out.append(hit.relative_to(repo_root).as_posix())
+    return out
+
+
+def select_targeted_tests(repo_root: Path, changed: list[str]) -> TargetedSelection:
+    """Map changed files → targeted pytest paths + broad-impact fail-safe."""
+    norms = [raw.replace("\\", "/") for raw in changed if raw and str(raw).strip()]
+    if any(is_broad_impact_path(n) for n in norms):
+        return TargetedSelection(
+            paths=[],
+            broad_impact=True,
+            notes=[BROAD_IMPACT_NOTE],
+        )
+
     targets: list[str] = []
     seen: set[str] = set()
 
@@ -489,8 +564,8 @@ def select_targeted_test_paths(repo_root: Path, changed: list[str]) -> list[str]
             seen.add(norm)
             targets.append(norm)
 
-    for raw in changed:
-        norm = raw.replace("\\", "/")
+    changed_modules: list[str] = []
+    for norm in norms:
         name = Path(norm).name
         if norm.startswith("tests/") and norm.endswith(".py"):
             if name.startswith("test_") or name.endswith("_test.py"):
@@ -507,4 +582,24 @@ def select_targeted_test_paths(repo_root: Path, changed: list[str]) -> list[str]
                     _add(hit.relative_to(repo_root).as_posix())
                 for hit in tests_root.rglob(f"{stem}_test.py"):
                     _add(hit.relative_to(repo_root).as_posix())
-    return targets
+            dotted = src_path_to_dotted_module(norm)
+            if dotted:
+                changed_modules.append(dotted)
+
+    if changed_modules:
+        for test_rel in _iter_test_files(repo_root):
+            if test_rel in seen:
+                continue
+            try:
+                text = (repo_root / test_rel).read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            if any(_text_references_module(text, dotted) for dotted in changed_modules):
+                _add(test_rel)
+
+    return TargetedSelection(paths=targets, broad_impact=False, notes=[])
+
+
+def select_targeted_test_paths(repo_root: Path, changed: list[str]) -> list[str]:
+    """Deterministic mapping from changed files to targeted pytest paths."""
+    return select_targeted_tests(repo_root, changed).paths

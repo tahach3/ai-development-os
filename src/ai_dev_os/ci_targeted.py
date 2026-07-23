@@ -1,4 +1,4 @@
-"""Round 4F — targeted pytest fast-signal against a git base ref."""
+"""Round 4F/4G — targeted pytest fast-signal against a git base ref."""
 
 from __future__ import annotations
 
@@ -18,9 +18,10 @@ from .ci_models import (
     new_ci_run_id,
 )
 from .ci_pytest_ergonomics import (
+    BROAD_IMPACT_NOTE,
     list_changed_paths,
     run_pytest_ergonomics,
-    select_targeted_test_paths,
+    select_targeted_tests,
 )
 from .ci_runner import CICommandError
 from .git_safety import inspect_repo
@@ -72,10 +73,28 @@ def run_ci_targeted(
     except CICommandError as exc:
         raise CITargetedError(str(exc)) from exc
 
-    targets = select_targeted_test_paths(root, changed)
+    selection = select_targeted_tests(root, changed)
+    targets = selection.paths
     changed_py = [p for p in changed if p.endswith(".py")]
 
-    if not targets:
+    if selection.broad_impact:
+        now = utc_now_iso()
+        note = selection.notes[0] if selection.notes else BROAD_IMPACT_NOTE
+        stage = CIStageResult(
+            stage_name="pytest_targeted",
+            command_identity="ci-targeted (broad impact)",
+            started_at=now,
+            finished_at=now,
+            validation_status=CIStageStatus.PASSED.value,
+            failure_class=CIFailureClass.NONE.value,
+            sanitized_output_summary=note,
+            notes=list(selection.notes) or [BROAD_IMPACT_NOTE],
+            files_examined=list(changed),
+            policy_decision="allow",
+            next_action="run full pytest suite; ci-targeted skipped narrow selection",
+        )
+        run.stages.append(stage)
+    elif not targets:
         now = utc_now_iso()
         stage = CIStageResult(
             stage_name="pytest_targeted",

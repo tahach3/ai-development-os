@@ -137,6 +137,14 @@ Local CI, quality gates, and pull-request validation foundation:
 - No new runtime dependency; no workflow/permission/secret/live-model/Equitify change
 - Design: `docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md`; package **`0.8.7`**
 
+## Round 4G (complete) — ci-targeted selection quality (local only)
+
+- Design: `docs/ROUND_4G_CI_TARGETED_SELECTION_DESIGN.md`
+- Upgrade in place: import-string scanning under `tests/` for changed module dotted paths; broad-impact fail-safe for `__init__.py` / `cli.py` / `models.py` / `config/**` / `schemas/**` → note **broad impact, full suite recommended** (never silent empty-green)
+- Keeps Round 4F flaky/coverage/`CIRun`/`--format md` behavior; `STAGE_ORDER` / `4a.1` unchanged; no second competing `ci-targeted` module
+- Package **`0.8.8`**
+- Round **4D2 remains LOCKED**; Equitify disconnected
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs

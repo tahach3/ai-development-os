@@ -1,6 +1,10 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1–4D1.3 **provider readiness** (no live prompts; Round 4D2 locked), Round 4E **multi-project boundary enforcement**, and Round 4F **CI ergonomics** (opt-in flaky isolation, coverage notes, PR `ci-targeted`).
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1–4D1.3 **provider readiness** (no live prompts; Round 4D2 locked), Round 4E **multi-project boundary enforcement**, Round 4F **CI ergonomics** (opt-in flaky isolation, coverage notes, PR `ci-targeted`), and Round 4G **ci-targeted selection quality** (import-string scan + broad-impact fail-safe).
+
+## Round 4G status
+
+Round 4G upgrades `ci-targeted` selection in place: import-string scanning under `tests/` for changed module dotted paths, plus a broad-impact fail-safe (`__init__.py`, `cli.py`, `models.py`, `config/**`, `schemas/**`) that reports **broad impact, full suite recommended** instead of a silent empty-green selection. **STAGE_ORDER** and CI schema **`4a.1`** unchanged.
 
 ## Round 4F status
 
@@ -20,13 +24,14 @@ Round 4E adds deterministic multi-project boundary checks: per-project `allowed_
 | Provider readiness audit (Round 4D1–4D1.3) | Yes — **no live model invocations** |
 | Multi-project boundary gate (Round 4E) | Yes — local `validate-change` / `ci-boundaries` |
 | CI ergonomics (Round 4F) | Yes — opt-in flaky isolation, coverage notes, PR `ci-targeted` |
+| ci-targeted selection quality (Round 4G) | Yes — import scan + broad-impact fail-safe |
 | Workflow permissions | `contents: read` only |
 | Repository secrets / live provider / auto review / merge / deploy | **No** |
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
 | Round 4D2 live smoke | **LOCKED** |
 | CI run history + regression compare (`ci-history`/`ci-compare`) | Yes — local, deterministic |
-| Package version | **0.8.7** |
+| Package version | **0.8.8** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization), ACP, security scanners.
 
@@ -87,11 +92,13 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Round 4E: multi-project boundary enforcement — package **0.8.5**; 4D2 still **LOCKED**
 - Round 4F: CI ergonomics (flaky isolation, coverage notes, PR `ci-targeted`) — package **0.8.6**; 4D2 still **LOCKED**
 - Round 4A hardening: cross-platform sanitize fix (Windows/UNC paths redacted on POSIX), `ci-check --format md`, CI run history + regression compare (`ci-history`/`ci-compare`) — package **0.8.7**; additive, CI schema unchanged (`4a.1`); 4D2 still **LOCKED**
+- Round 4G: `ci-targeted` selection quality (import-string scan + broad-impact fail-safe) — package **0.8.8**; 4D2 still **LOCKED**
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4F + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.7**.
+See `docs/` for architecture, Round 3A–4G + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.8**.
 
+- [`docs/ROUND_4G_CI_TARGETED_SELECTION_DESIGN.md`](docs/ROUND_4G_CI_TARGETED_SELECTION_DESIGN.md) — Round 4G ci-targeted selection quality
 - [`docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md`](docs/ROUND_4A_LOCAL_CI_HARDENING_DESIGN.md) — sanitize fix, history/compare, MD reports
 - [`docs/ROUND_4F_CI_ERGONOMICS_DESIGN.md`](docs/ROUND_4F_CI_ERGONOMICS_DESIGN.md) — Round 4F CI ergonomics design
 - [`docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md`](docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md) — Round 4E boundary gate design
