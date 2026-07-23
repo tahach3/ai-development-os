@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -37,9 +38,12 @@ MUTATION_CATALOG: dict[str, dict[str, Any]] = {
     "add_subtract_buggy": {
         "description": "Introduce buggy subtract (tests fail)",
         "files": {
+            # Length must differ from add_subtract_fixed: CPython .pyc mtime is
+            # second-resolution, so same-size rewrites in the same second can
+            # keep stale bytecode and flake test_fail_then_repair on fast CI.
             "calculator/ops.py": (
                 "def add(a, b):\n    return a + b\n\n"
-                "def subtract(a, b):\n    return a + b\n"
+                "def subtract(a, b):\n    return a + b  # intentional bug\n"
             ),
             "tests/test_ops.py": (
                 "from calculator.ops import add, subtract\n\n"
@@ -92,6 +96,24 @@ MUTATION_CATALOG: dict[str, dict[str, Any]] = {
 }
 
 
+def _invalidate_bytecode_caches(root: Path, changed_rels: list[str]) -> None:
+    """Drop __pycache__ next to mutated sources so same-second rewrites are safe."""
+    seen: set[Path] = set()
+    for rel in changed_rels:
+        parent = (root / rel).resolve().parent
+        if parent in seen:
+            continue
+        seen.add(parent)
+        cache = parent / "__pycache__"
+        if cache.is_dir():
+            shutil.rmtree(cache, ignore_errors=True)
+        for pyc in parent.glob("*.pyc"):
+            try:
+                pyc.unlink()
+            except OSError:
+                pass
+
+
 def apply_fixture_mutation(
     worktree: Path,
     mutation_id: str,
@@ -114,6 +136,9 @@ def apply_fixture_mutation(
         target.write_text(content, encoding="utf-8")
         changed.append(rel.replace("\\", "/"))
 
+    if changed:
+        _invalidate_bytecode_caches(root, changed)
+
     if commit and changed:
         subprocess.run(
             ["git", "add", "-A"],
@@ -121,21 +146,31 @@ def apply_fixture_mutation(
             check=True,
             capture_output=True,
         )
-        subprocess.run(
-            [
-                "git",
-                "-c",
-                "user.email=orch@ai-dev-os.local",
-                "-c",
-                "user.name=OrchestrationHarness",
-                "commit",
-                "-m",
-                f"harness mutation {mutation_id}",
-            ],
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
             cwd=root,
             check=True,
             capture_output=True,
+            text=True,
         )
+        # Idempotent mutations (e.g. repeated cosmetic_only) may leave a clean tree
+        # once bytecode caches are no longer staged as accidental diffs.
+        if status.stdout.strip():
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.email=orch@ai-dev-os.local",
+                    "-c",
+                    "user.name=OrchestrationHarness",
+                    "commit",
+                    "-m",
+                    f"harness mutation {mutation_id}",
+                ],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
 
     head = read_head(root) if (root / ".git").exists() or (root / ".git").is_file() else ""
     diff_fp = fingerprint(

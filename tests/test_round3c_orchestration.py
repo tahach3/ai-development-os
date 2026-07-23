@@ -262,6 +262,63 @@ def test_test_fail_then_repair(calc_orch_env):
     assert final.current_state == OrchestrationState.COMPLETED.value
     assert final.current_repair_round >= 1
     assert final.test_status == "passed"
+    assert not final.stop_reason
+
+
+def test_buggy_and_fixed_mutation_sizes_differ():
+    from ai_dev_os.orchestration_mutations import MUTATION_CATALOG
+
+    buggy = MUTATION_CATALOG["add_subtract_buggy"]["files"]["calculator/ops.py"]
+    fixed = MUTATION_CATALOG["add_subtract_fixed"]["files"]["calculator/ops.py"]
+    assert len(buggy) != len(fixed), (
+        "same-size buggy/fixed sources flake under CPython second-resolution .pyc mtime"
+    )
+
+
+def test_mutation_clears_stale_bytecode(tmp_path: Path):
+    """Harness mutations must drop .pyc so same-second equal-size rewrites stay correct."""
+    import os
+    import py_compile
+
+    from ai_dev_os.orchestration_mutations import MUTATION_CATALOG, apply_fixture_mutation
+
+    # Historical equal-length pair that triggered the CI flake under second mtime.
+    equal_buggy = (
+        "def add(a, b):\n    return a + b\n\n"
+        "def subtract(a, b):\n    return a + b\n"
+    )
+    equal_fixed = (
+        "def add(a, b):\n    return a + b\n\n"
+        "def subtract(a, b):\n    return a - b\n"
+    )
+    assert len(equal_buggy) == len(equal_fixed)
+
+    root = tmp_path / "wt"
+    (root / "calculator").mkdir(parents=True)
+    (root / "tests").mkdir()
+    (root / "calculator" / "__init__.py").write_text("", encoding="utf-8")
+    ops = root / "calculator" / "ops.py"
+    ops.write_text(equal_buggy, encoding="utf-8")
+    (root / "tests" / "test_ops.py").write_text(
+        MUTATION_CATALOG["add_subtract_fixed"]["files"]["tests/test_ops.py"],
+        encoding="utf-8",
+    )
+    py_compile.compile(str(ops), doraise=True)
+    assert list((root / "calculator").rglob("*.pyc"))
+    mtime = ops.stat().st_mtime
+    ops.write_text(equal_fixed, encoding="utf-8")
+    os.utime(ops, (mtime, mtime))
+    # Without invalidation, pytest would still see buggy bytecode (subtract→7).
+    apply_fixture_mutation(root, "add_subtract_fixed", commit=False)
+    assert not list((root / "calculator").rglob("*.pyc"))
+    result = subprocess.run(
+        ["python", "-m", "pytest", "-q", "tests"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 # --------------------------------------------------------------------------- B

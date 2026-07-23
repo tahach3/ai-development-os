@@ -235,6 +235,7 @@ def test_env_secrets_not_inherited(calc_env, monkeypatch):
     )
     assert envelope.execution_status is ExecutionStatus.SUCCESS
     assert envelope.exit_code == 0
+    assert filter_environment().get("PYTHONDONTWRITEBYTECODE") == "1"
 
 
 def test_targeted_pytest_runs(calc_env):

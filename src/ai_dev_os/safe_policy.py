@@ -84,6 +84,7 @@ ALLOWED_ENV_KEYS = frozenset(
         "LC_ALL",
         "PYTHONUTF8",
         "PYTHONIOENCODING",
+        "PYTHONDONTWRITEBYTECODE",
         "COMSPEC",
     }
 )
@@ -155,6 +156,9 @@ def filter_environment(source: dict[str, str] | None = None) -> dict[str, str]:
         if SECRET_ENV_RE.search(key):
             continue
         filtered[key] = value
+    # Nested pytest under harness mutations must not leave .pyc that can be
+    # reused after same-second, same-size source rewrites (CPython mtime secs).
+    filtered["PYTHONDONTWRITEBYTECODE"] = "1"
     return filtered
 
 
