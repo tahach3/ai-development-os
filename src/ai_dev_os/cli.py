@@ -1089,6 +1089,34 @@ def cmd_validate_change(args: argparse.Namespace) -> int:
     return exit_code_for_pr_summary(summary)
 
 
+def cmd_ci_boundaries(args: argparse.Namespace) -> int:
+    """Round 4E: local multi-project boundary check (not a ci-check stage)."""
+    from .ci_boundaries import check_project_boundaries
+    from .ci_config import CIConfigError, load_ci_policy
+    from .ci_validate_change import ValidateChangeError, _git_name_status
+
+    root = _repo_root()
+    try:
+        policy = load_ci_policy(root / "config" / "ci_policy.yaml")
+        explicit = [p for p in (args.path or []) if p]
+        if explicit:
+            paths = explicit
+        else:
+            rows = _git_name_status(root, args.base, args.head or "HEAD")
+            paths = [p for _, p in rows]
+        result = check_project_boundaries(
+            paths=paths,
+            policy=policy,
+            repo_root=root,
+            read_content=True,
+        )
+    except (CIConfigError, ValidateChangeError, OSError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+    return 0 if result.ok else 1
+
+
 def cmd_provider_readiness(args: argparse.Namespace) -> int:
     """Safe live-provider eligibility audit — never sends model prompts."""
     from .provider_readiness_engine import ProviderReadinessEngine
@@ -1816,6 +1844,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_vc.add_argument("--base", default=None, help="Base ref (e.g. master); omit for working tree")
     p_vc.add_argument("--head", default="HEAD")
     p_vc.set_defaults(func=cmd_validate_change)
+
+    p_bound = sub.add_parser(
+        "ci-boundaries",
+        help="Round 4E multi-project boundary check (local; not a ci-check stage)",
+    )
+    p_bound.add_argument("--base", default=None, help="Base ref for git name-status path list")
+    p_bound.add_argument("--head", default="HEAD")
+    p_bound.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        help="Explicit relative path to check (repeatable; skips git diff when set)",
+    )
+    p_bound.set_defaults(func=cmd_ci_boundaries)
 
     p_br = sub.add_parser(
         "build-report",

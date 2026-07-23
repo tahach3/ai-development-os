@@ -8,6 +8,7 @@ from pathlib import Path
 
 import yaml
 
+from .ci_boundaries import check_project_boundaries
 from .ci_config import CIPolicy, load_ci_policy
 from .ci_dependency_policy import check_dependency_policy
 from .ci_models import (
@@ -350,6 +351,24 @@ def validate_change(
                 )
 
     summary.findings.extend(_workflow_findings(root, existing))
+
+    boundary = check_project_boundaries(
+        paths=paths,
+        policy=pol,
+        repo_root=root,
+        read_content=True,
+    )
+    for bf in boundary.findings:
+        summary.findings.append(
+            PRValidationFinding(
+                path=bf.path,
+                category="project_boundary",
+                severity="blocker",
+                summary=bf.detail,
+                failure_class=bf.failure_class,
+                blocker=bf.blocker,
+            )
+        )
 
     if any(p == "pyproject.toml" or p.endswith("/pyproject.toml") for p in paths):
         dep = check_dependency_policy(root, prohibited_names=pol.prohibited_dependency_names)

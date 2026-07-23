@@ -80,3 +80,22 @@ safety_critical_path_prefixes:
   - src/ai_dev_os/project_registry.py
   - src/ai_dev_os/ci_config.py
   - src/ai_dev_os/ci_engine.py
+
+# Round 4E — additive multi-project boundaries (schema stays 4a.1; not a STAGE_ORDER stage).
+project_boundaries:
+  - project_id: calculator-demo
+    allowed_roots:
+      - demo_projects/calculator-demo
+    forbidden_substrings:
+      - equitify-machine
+      - equitify_machine
+      - /equitify/
+      - \equitify\
+  - project_id: ai-dev-os
+    allowed_roots:
+      - src/ai_dev_os
+    forbidden_substrings:
+      - equitify-machine
+      - equitify_machine
+      - /equitify/
+      - \equitify\

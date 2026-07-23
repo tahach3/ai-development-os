@@ -1,3 +1,3 @@
-"""AI Development Operating System — Round 4D1.2 (auth + noninteractive readiness)."""
+"""AI Development Operating System - Round 4E multi-project boundary enforcement."""
 
-__version__ = "0.8.3"
+__version__ = "0.8.5"

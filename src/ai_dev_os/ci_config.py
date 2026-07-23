@@ -23,6 +23,15 @@ def default_ci_policy_path() -> Path:
     return _repo_root() / "config" / "ci_policy.yaml"
 
 
+@dataclass(frozen=True)
+class ProjectBoundaryRule:
+    """Per-project allowed roots and forbidden path/import substrings (Round 4E)."""
+
+    project_id: str
+    allowed_roots: tuple[str, ...]
+    forbidden_substrings: tuple[str, ...] = ()
+
+
 @dataclass
 class CIPolicy:
     schema_version: str = CI_SCHEMA_VERSION
@@ -42,12 +51,83 @@ class CIPolicy:
     prohibited_path_substrings: list[str] = field(default_factory=list)
     runtime_artifact_globs: list[str] = field(default_factory=list)
     safety_critical_path_prefixes: list[str] = field(default_factory=list)
+    project_boundaries: list[ProjectBoundaryRule] = field(default_factory=list)
 
     def clamp_timeout(self, value: float | None, *, default: float) -> float:
         timeout = float(default if value is None else value)
         if timeout <= 0:
             raise CIConfigError("Timeout must be positive")
         return min(timeout, self.max_timeout_seconds)
+
+
+def _normalize_root(value: str) -> str:
+    return value.replace("\\", "/").strip().strip("/")
+
+
+def parse_project_boundaries(raw: Any) -> list[ProjectBoundaryRule]:
+    """Validate project_boundaries; absent/None → empty safe default."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise CIConfigError("project_boundaries must be a list")
+    seen_ids: set[str] = set()
+    seen_roots: dict[str, str] = {}
+    out: list[ProjectBoundaryRule] = []
+    for idx, item in enumerate(raw):
+        if not isinstance(item, dict):
+            raise CIConfigError(f"project_boundaries[{idx}] must be a mapping")
+        project_id = str(item.get("project_id") or "").strip()
+        if not project_id:
+            raise CIConfigError(f"project_boundaries[{idx}].project_id is required")
+        if project_id in seen_ids:
+            raise CIConfigError(f"duplicate project_boundaries project_id: {project_id!r}")
+        seen_ids.add(project_id)
+        roots_raw = item.get("allowed_roots")
+        if not isinstance(roots_raw, list) or not roots_raw:
+            raise CIConfigError(
+                f"project_boundaries[{idx}].allowed_roots must be a non-empty list"
+            )
+        roots: list[str] = []
+        for ridx, root in enumerate(roots_raw):
+            if not isinstance(root, str) or not root.strip():
+                raise CIConfigError(
+                    f"project_boundaries[{idx}].allowed_roots[{ridx}] must be a non-empty string"
+                )
+            norm = _normalize_root(root)
+            if not norm:
+                raise CIConfigError(
+                    f"project_boundaries[{idx}].allowed_roots[{ridx}] is empty after normalize"
+                )
+            prior = seen_roots.get(norm.lower())
+            if prior is not None and prior != project_id:
+                raise CIConfigError(
+                    f"ambiguous allowed_roots {norm!r}: claimed by {prior!r} and {project_id!r}"
+                )
+            seen_roots[norm.lower()] = project_id
+            roots.append(norm)
+        forb_raw = item.get("forbidden_substrings")
+        if forb_raw is None:
+            forb_raw = []
+        if not isinstance(forb_raw, list):
+            raise CIConfigError(
+                f"project_boundaries[{idx}].forbidden_substrings must be a list"
+            )
+        forbs: list[str] = []
+        for fidx, needle in enumerate(forb_raw):
+            if not isinstance(needle, str) or not needle.strip():
+                raise CIConfigError(
+                    f"project_boundaries[{idx}].forbidden_substrings[{fidx}] "
+                    "must be a non-empty string"
+                )
+            forbs.append(needle.replace("\\", "/").strip())
+        out.append(
+            ProjectBoundaryRule(
+                project_id=project_id,
+                allowed_roots=tuple(roots),
+                forbidden_substrings=tuple(forbs),
+            )
+        )
+    return out
 
 
 def validate_ci_policy(raw: dict[str, Any]) -> CIPolicy:
@@ -68,6 +148,8 @@ def validate_ci_policy(raw: dict[str, Any]) -> CIPolicy:
         # Reorder attempt: normalize to STAGE_ORDER but record as error for safety.
         if stages != list(STAGE_ORDER):
             raise CIConfigError("CI stage order must match fixed STAGE_ORDER exactly")
+
+    boundaries = parse_project_boundaries(raw.get("project_boundaries"))
 
     return CIPolicy(
         schema_version=schema_version,
@@ -93,6 +175,7 @@ def validate_ci_policy(raw: dict[str, Any]) -> CIPolicy:
         safety_critical_path_prefixes=[
             str(x).replace("\\", "/") for x in (raw.get("safety_critical_path_prefixes") or [])
         ],
+        project_boundaries=boundaries,
     )
 
 

@@ -111,6 +111,14 @@ Local CI, quality gates, and pull-request validation foundation:
 - Cursor remains editor-only on this host; Claude not installed; fresh-context ≠ independent review
 - ACP / scanners **not** installed; Round 4D2 remains **LOCKED**
 
+## Round 4E (complete) — multi-project boundary enforcement (local only)
+
+- Design: `docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md`
+- Additive `project_boundaries` on CI policy (`4a.1` unchanged; **no** STAGE_ORDER change)
+- Pure path + simple import-string boundary checker; `validate-change` + optional `ci-boundaries`
+- Package **`0.8.5`**
+- Round **4D2 remains LOCKED**; Equitify disconnected; no live model/network/paid-API calls
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs

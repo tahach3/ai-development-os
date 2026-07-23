@@ -1,10 +1,10 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1–4D1.2 **provider readiness**, and Round 4D1.3 **trusted Codex headless-provider readiness** (install/auth/status + contract hardening — **no live prompts**; Round 4D2 locked).
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1–4D1.3 **provider readiness** (no live prompts; Round 4D2 locked), and Round 4E **multi-project boundary enforcement** (local path/import gates).
 
-## Round 4D1.3 status
+## Round 4E status
 
-Round 4D1.3 establishes one official OpenAI Codex CLI path on the operator host: trusted install, ChatGPT auth via `codex login status`, noninteractive contract from help/adapter/synthetic tests, JSONL/env hardening for a future Round 4D2. **Cursor remains editor-only. No `codex exec` prompts. ACP/scanners not installed.**
+Round 4E adds deterministic multi-project boundary checks: per-project `allowed_roots` and `forbidden_substrings` in `config/ci_policy.yaml`, a pure local checker, integration into `validate-change`, and optional `ai-dev-os ci-boundaries`. **Not** a mandatory `ci-check` stage. **STAGE_ORDER** and CI schema **`4a.1`** unchanged (additive config only).
 
 **Honest status:**
 
@@ -13,13 +13,14 @@ Round 4D1.3 establishes one official OpenAI Codex CLI path on the operator host:
 | Local CI quality gates (Round 4A) | Yes |
 | Private remote CI executed successfully (Round 4B) | Yes — on `tahach3/ai-development-os` |
 | Evidence-first reporting (Round 4C) | Yes — deterministic templates; no LLM summaries |
-| Provider readiness audit (Round 4D1–4D1.2) | Yes — **no live model invocations** |
-| Trusted Codex headless readiness (Round 4D1.3) | Yes — ChatGPT auth verified; live still **not** authorized |
+| Provider readiness audit (Round 4D1–4D1.3) | Yes — **no live model invocations** |
+| Multi-project boundary gate (Round 4E) | Yes — local `validate-change` / `ci-boundaries` |
 | Workflow permissions | `contents: read` only |
 | Repository secrets / live provider / auto review / merge / deploy | **No** |
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
-| Package version | **0.8.3** |
+| Round 4D2 live smoke | **LOCKED** |
+| Package version | **0.8.5** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization), ACP, security scanners.
 
@@ -39,6 +40,9 @@ ai-dev-os register-project --id calculator-demo --name "Calculator Demo" --root 
 # Round 4A local gates:
 ai-dev-os ci-check
 ai-dev-os validate-change --base HEAD~1
+
+# Round 4E boundaries (optional; also runs inside validate-change):
+ai-dev-os ci-boundaries --path demo_projects/calculator-demo/calculator/ops.py
 
 # Round 4C reporting (from a persisted/synthetic evidence bundle JSON):
 ai-dev-os build-report --evidence-bundle PATH --audience executive --detail-level summary
@@ -64,12 +68,14 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Round 4D1: safe provider readiness auditing (`4d1.1`) — live smoke **not** authorized
 - Round 4D1.1: trusted CLI ambiguity resolution (`4d1.1.1`) — pins/host-local only; live still **not** authorized
 - Round 4D1.2: authentication + noninteractive readiness (`4d1.2`)
-- Round 4D1.3: trusted Codex headless-provider readiness (`4d1.3`) — package **0.8.3**; live still **not** authorized
+- Round 4D1.3: trusted Codex headless-provider readiness (`4d1.3`) — live still **not** authorized
+- Round 4E: multi-project boundary enforcement — package **0.8.5**; 4D2 still **LOCKED**
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4D1.3 designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.3**.
+See `docs/` for architecture, Round 3A–4E designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.5**.
 
+- [`docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md`](docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md) — Round 4E boundary gate design
 - [`docs/OPEN_SOURCE_ADOPTION_ROADMAP.md`](docs/OPEN_SOURCE_ADOPTION_ROADMAP.md) — OS remains authority; phased external adapters
 - [`docs/PROVIDER_READINESS_STANDARD.md`](docs/PROVIDER_READINESS_STANDARD.md) — Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3 readiness contract
 - [`docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md`](docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md) — auth + noninteractive contract
@@ -78,7 +84,3 @@ See `docs/` for architecture, Round 3A–4D1.3 designs, reporting/readiness stan
 - [`docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md`](docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md) — Round 4D1.2 design
 - [`docs/ROUND_4D1_3_CODEX_HEADLESS_PROVIDER_DESIGN.md`](docs/ROUND_4D1_3_CODEX_HEADLESS_PROVIDER_DESIGN.md) — Round 4D1.3 design
 - [`docs/REPORTING_STANDARD.md`](docs/REPORTING_STANDARD.md) — Round 4C reporting contract
-- [`docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md`](docs/ROUND_4C_HIGH_QUALITY_REPORTING_DESIGN.md) — Round 4C design
-- [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) — master architectural direction (not all implemented)
-- [`docs/SHARED_MEMORY_DESIGN.md`](docs/SHARED_MEMORY_DESIGN.md) — Phase B1 shared-memory **design only**
-- [`docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md`](docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md) — Phase B2 **implementation decisions only**

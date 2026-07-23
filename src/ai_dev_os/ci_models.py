@@ -72,6 +72,9 @@ class CIFailureClass(str, Enum):
     UNSUPPORTED_SCHEMA_VERSION = "unsupported_schema_version"
     INTERNAL_ERROR = "internal_error"
     POLICY_REJECTED = "policy_rejected"
+    BOUNDARY_VIOLATION = "boundary_violation"
+    BOUNDARY_CONFIG_AMBIGUOUS = "boundary_config_ambiguous"
+    BOUNDARY_CONFIG_INVALID = "boundary_config_invalid"
 
 
 STAGE_ORDER: tuple[str, ...] = (

@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-23 · **Package version:** `0.8.3` · **Round:** 4D1.3
+**As of:** 2026-07-23 · **Package version:** `0.8.5` · **Round:** 4E
 
 ---
 
@@ -20,6 +20,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **private remote CI validation** lane (Round 4B): first successful GitHub Actions run on private repo `tahach3/ai-development-os` (no secrets, no live providers, no deploy/merge).
 - An **evidence-first reporting** lane (Round 4C): canonical evidence, claim statuses, audience/detail renderers, deterministic relevance, integrity fingerprints (no LLM summaries).
 - A **provider readiness** lane (Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3): safe eligibility auditing for future live smoke — discovery/version/help/auth-status + ambiguity resolution + auth/noninteractive contracts + trusted Codex headless path; never live prompts.
+- A **multi-project boundary** lane (Round 4E): deterministic path/import boundary checks via `project_boundaries` in CI policy, `validate-change`, and optional `ci-boundaries` (not a mandatory `ci-check` stage).
 
 ### It is not
 
@@ -321,6 +322,15 @@ python -m pytest -q
 - Live mode remains disabled; Round 4D2 requires separate authorization after `live_smoke_ready*`
 - Equitify disconnected; `live_provider_invocations: 0`
 
+### Round 4E (done) — multi-project boundary enforcement gate (local only)
+
+- Design: `docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md`
+- Additive `project_boundaries` on CI policy schema **`4a.1`** (no STAGE_ORDER change; no schema bump)
+- Pure deterministic checker: per-project `allowed_roots` + `forbidden_substrings` (path + simple import-string)
+- Surfaced via `validate-change` and optional CLI `ci-boundaries`
+- Package version **`0.8.5`**
+- Round **4D2 remains LOCKED**; Equitify remains disconnected; no live/network/paid-API calls
+
 ### Deferred (explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs (tags remain residual supply-chain risk)
@@ -398,6 +408,7 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ROUND_4D1_1_CLI_AMBIGUITY_RESOLUTION_DESIGN.md` | Round 4D1.1 CLI ambiguity resolution design |
 | `docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md` | Round 4D1.2 auth + noninteractive design |
 | `docs/ROUND_4D1_3_CODEX_HEADLESS_PROVIDER_DESIGN.md` | Round 4D1.3 Codex headless-provider design |
+| `docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md` | Round 4E multi-project boundary enforcement design |
 | `docs/OPEN_SOURCE_ADOPTION_ROADMAP.md` | Open-source adoption roadmap (OS remains authority) |
 | `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3 readiness standard / CLI contract |
 | `docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md` | Round 4D1.2 auth + noninteractive standard |
