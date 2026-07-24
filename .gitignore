@@ -64,8 +64,8 @@ workspace/provider_readiness/*
 !workspace/provider_readiness/.gitkeep
 workspace/provider_pins/*
 !workspace/provider_pins/.gitkeep
-workspace/provider_selection_decisions/*
-!workspace/provider_selection_decisions/.gitkeep
+workspace/memory/*
+!workspace/memory/.gitkeep
 
 # Local project registry (example stays tracked)
 config/projects.yaml

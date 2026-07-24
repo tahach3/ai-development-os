@@ -165,6 +165,8 @@ Completed rounds above remain authoritative for **what is implemented**. Bluepri
 
 **Phase B3.1 (domain foundations only):** `src/ai_dev_os/memory/` — enums, immutable models, validation, normalization, hashing/fingerprints, typed errors, pure lifecycle/auth checks, disabled-by-default config. Package remains **0.8.1**. No SQLite, migrations, repositories, service orchestration, CLI, providers, or runtime enablement.
 
+**Phase B3.2 (SQLite persistence, disabled by default):** [`SHARED_MEMORY_SQLITE_PERSISTENCE.md`](SHARED_MEMORY_SQLITE_PERSISTENCE.md) — stdlib `sqlite3` schema + idempotent migrations + repository CRUD over B3.1 models; hard refuse when disabled; read-only `memory-status` CLI. Package **`0.8.9`**. No service orchestration, no auto-enable, no FTS5/embeddings, no 4D2, Equitify untouched.
+
 ## Explicitly deferred
 
 - LangChain / CrewAI / AutoGen

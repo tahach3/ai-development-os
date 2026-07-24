@@ -35,3 +35,11 @@ class MemoryConflictError(MemoryError):
 
 class MemoryIsolationError(MemoryError):
     """Project-scope isolation violation."""
+
+
+class MemoryPersistenceError(MemoryError):
+    """SQLite path, connection, or backend configuration failure."""
+
+
+class MemoryMigrationError(MemoryError):
+    """Schema migration apply/verify failure (fail closed)."""

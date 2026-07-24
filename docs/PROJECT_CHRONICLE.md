@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-24 · **Package version:** `0.8.8` · **Round:** 4G (ci-targeted selection quality)
+**As of:** 2026-07-24 · **Package version:** `0.8.9` · **Round:** 4G + Phase B3.2 (shared memory SQLite, disabled by default)
 
 ---
 
@@ -24,6 +24,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **CI ergonomics** lane (Round 4F): opt-in `--isolate-flaky` (honesty: fail-then-pass → `flaky_test_detected`), `--coverage` notes (optional `[cov]`), and PR-only `ci-targeted` fast signal.
 - A **local-CI hardening** lane (on top of 4A/4E/4F, package `0.8.7`): CI run history + regression comparison (`ci-history` / `ci-compare`), human-readable Markdown CI reports (`ci-check` / `ci-targeted --format md`), and a cross-platform executable-path redaction fix — all additive, with the fixed CI `STAGE_ORDER` and `4a.1` schema unchanged.
 - A **ci-targeted selection quality** lane (Round 4G, package `0.8.8`): import-string scanning for changed modules plus broad-impact fail-safe notes — never a silent empty-green selection for high-fanout paths.
+- A **shared-memory SQLite persistence** lane (Phase B3.2, package `0.8.9`): local stdlib `sqlite3` schema/migrations/repository behind disabled-by-default config; read-only `memory-status`; no service orchestration or auto-enable.
 
 ### It is not
 
@@ -400,6 +401,15 @@ Source: `docs/ROADMAP.md`.
 - Memory remains **disabled**; no SQLite, migrations, repositories, services, CLI, providers, or runtime enablement
 - Package version unchanged at **0.8.1** when B3.1 landed (Round 4D1.1 baseline); memory-specific constants use `memory.1`
 
+### Phase B3.2 — shared memory SQLite persistence (disabled by default)
+
+- Design: [`docs/SHARED_MEMORY_SQLITE_PERSISTENCE.md`](SHARED_MEMORY_SQLITE_PERSISTENCE.md)
+- Stdlib `sqlite3` only: schema DDL, checksummed forward-only migrations (`001` / compatibility `memory.1`), connection path safety, `SqliteMemoryRepository` CRUD over immutable B3.1 models
+- Hard guard: default `MemoryConfig.enabled=false`; initialize/repository writes raise `MemoryDisabledError` (never silent no-op)
+- CLI: read-only `memory-status` reports `"disabled"` without opening/creating a DB
+- No provider/orchestration/CI auto-wiring; no FTS5/embeddings; Equitify untouched; Round 4D2 remains **LOCKED**; `STAGE_ORDER` / `4a.1` unchanged
+- Package **`0.8.9`**
+
 ---
 
 ## 11. Equitify is not connected
@@ -442,7 +452,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/MODEL_ROLES.md` | Claude / Cursor / Codex roles; OS as platform authority |
 | `docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md` | Future AI OS integration master blueprint (direction only) |
 | `docs/SHARED_MEMORY_DESIGN.md` | Phase B1 shared-memory design |
-| `docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md` | Phase B2 implementation decisions; B3.1 domain foundations landed (no SQLite runtime) |
+| `docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md` | Phase B2 implementation decisions; B3.1 domain foundations landed |
+| `docs/SHARED_MEMORY_SQLITE_PERSISTENCE.md` | Phase B3.2 SQLite persistence (disabled by default) |
 | `exports/AI_Development_OS_Project_Chronicle.md` | Downloadable chronicle copy |
 
 ---

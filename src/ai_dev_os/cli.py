@@ -598,6 +598,22 @@ def cmd_behavioral_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_memory_status(_args: argparse.Namespace) -> int:
+    """Read-only shared-memory status. Does not open or create a database."""
+    from .memory import DEFAULT_MEMORY_CONFIG, MEMORY_SCHEMA_VERSION
+
+    cfg = DEFAULT_MEMORY_CONFIG
+    payload = {
+        "enabled": bool(cfg.enabled),
+        "status": "enabled" if cfg.enabled else "disabled",
+        "backend": cfg.backend,
+        "db_path": cfg.db_path,
+        "schema_version": MEMORY_SCHEMA_VERSION,
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
 def cmd_project_status(args: argparse.Namespace) -> int:
     registry = ProjectRegistry()
     plan_store = PlanStore()
@@ -1700,6 +1716,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_ps = sub.add_parser("project-status", help="Show project and task status")
     p_ps.add_argument("--project-id")
     p_ps.set_defaults(func=cmd_project_status)
+
+    p_mem = sub.add_parser(
+        "memory-status",
+        help="Show shared-memory status (read-only; reports disabled by default)",
+    )
+    p_mem.set_defaults(func=cmd_memory_status)
 
     p_cs = sub.add_parser(
         "create-session",

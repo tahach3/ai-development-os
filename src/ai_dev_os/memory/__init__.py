@@ -1,4 +1,4 @@
-"""Phase B3.1 shared-memory domain foundations (no SQLite / runtime enablement)."""
+"""Shared-memory domain + local SQLite persistence (disabled by default)."""
 
 from __future__ import annotations
 
@@ -34,7 +34,9 @@ from .errors import (
     MemoryDisabledError,
     MemoryError,
     MemoryIsolationError,
+    MemoryMigrationError,
     MemoryNotFoundError,
+    MemoryPersistenceError,
     MemorySecurityError,
     MemoryValidationError,
 )
@@ -46,6 +48,24 @@ from .hashing import (
     memory_sha256_hex,
 )
 from .normalization import normalize_memory_content, refuse_secrets_in_text
+from .sqlite_connection import (
+    initialize_memory_database,
+    memory_connection,
+    open_memory_connection,
+    validate_memory_database,
+    validate_memory_db_path,
+)
+from .sqlite_migrations import (
+    MemoryDatabaseInfo,
+    MemoryMigration,
+    checksum_migration_sql,
+)
+from .sqlite_repository import SqliteMemoryRepository
+from .sqlite_schema import (
+    MEMORY_ACTOR_KIND_VALUES,
+    MEMORY_EVENT_ACTION_VALUES,
+    domain_enum_values,
+)
 from .validation import (
     ACTION_ALLOWED_ROLES,
     LIFECYCLE_TRANSITIONS,
@@ -74,6 +94,8 @@ __all__ = [
     "LIFECYCLE_TRANSITIONS",
     "LifecycleStatus",
     "LinkType",
+    "MEMORY_ACTOR_KIND_VALUES",
+    "MEMORY_EVENT_ACTION_VALUES",
     "MEMORY_FINGERPRINT_VERSION",
     "MEMORY_NORMALIZATION_VERSION",
     "MEMORY_POLICY_VERSION",
@@ -85,38 +107,50 @@ __all__ = [
     "MemoryClass",
     "MemoryConfig",
     "MemoryConflictError",
+    "MemoryDatabaseInfo",
     "MemoryDisabledError",
     "MemoryError",
     "MemoryEvidenceRef",
     "MemoryEvidenceType",
     "MemoryIsolationError",
     "MemoryLink",
+    "MemoryMigration",
+    "MemoryMigrationError",
     "MemoryNotFoundError",
+    "MemoryPersistenceError",
     "MemoryRecord",
     "MemorySecurityError",
     "MemorySourceType",
     "MemoryValidationError",
     "Sensitivity",
+    "SqliteMemoryRepository",
     "authorize_memory_action",
     "build_memory_fingerprint_payload",
+    "checksum_migration_sql",
     "compute_content_hash",
+    "domain_enum_values",
     "fingerprint_payload_from_record",
+    "initialize_memory_database",
     "is_valid_memory_evidence_id",
     "is_valid_memory_event_id",
     "is_valid_memory_id",
     "is_valid_memory_link_id",
     "memory_canonical_json",
+    "memory_connection",
     "memory_sha256_hex",
     "new_memory_evidence_id",
     "new_memory_event_id",
     "new_memory_id",
     "new_memory_link_id",
     "normalize_memory_content",
+    "open_memory_connection",
     "prepare_candidate_record",
     "refuse_secrets_in_text",
     "validate_class_status_pairing",
     "validate_content_hash",
     "validate_lifecycle_transition",
+    "validate_memory_database",
+    "validate_memory_db_path",
     "validate_memory_record_fields",
     "validate_propose_dict",
     "validate_sensitivity_for_persist",
