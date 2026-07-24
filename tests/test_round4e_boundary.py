@@ -268,4 +268,4 @@ def test_validate_change_surfaces_boundary(tmp_path: Path):
 
 
 def test_package_version_round4e():
-    assert __version__ == "0.8.13"
+    assert __version__ == "0.8.14"

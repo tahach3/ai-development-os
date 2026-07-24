@@ -592,3 +592,262 @@ def test_constitutional_check_cli_persists(env, monkeypatch, tmp_path: Path):
         CourtVerdict.PASS_WITH_NOTES.value,
         CourtVerdict.ADVISORY_ONLY.value,
     )
+
+
+def test_show_court_record_displays_persisted(env, monkeypatch, capsys):
+    from ai_dev_os import court_store as cs_mod
+    from ai_dev_os.cli import main
+
+    task = _make_task(env["tasks"], "t-show")
+    plan = _make_plan(env["plans"], task, "p-show")
+    rec = evaluate_constitutional_court(
+        task,
+        plan,
+        CourtEvidenceEnvelope(),
+        evaluated_by="human",
+        force_advisory=True,
+    )
+    env["courts"].save(rec)
+    monkeypatch.setattr(cs_mod, "CourtStore", lambda *a, **k: env["courts"])
+
+    code = main(["show-court-record", "--record-id", rec.record_id])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert f"Court record: {rec.record_id}" in out
+    assert f"plan_id: {rec.plan_id}" in out
+    assert f"plan_fingerprint: {rec.plan_fingerprint}" in out
+    assert "verdict:" in out
+
+    code_json = main(["show-court-record", "--record-id", rec.record_id, "--json"])
+    assert code_json == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["record_id"] == rec.record_id
+    assert payload["plan_fingerprint"] == rec.plan_fingerprint
+
+
+def test_show_court_record_missing_id_errors(env, monkeypatch, capsys):
+    from ai_dev_os import court_store as cs_mod
+    from ai_dev_os.cli import main
+
+    monkeypatch.setattr(cs_mod, "CourtStore", lambda *a, **k: env["courts"])
+    code = main(["show-court-record", "--record-id", "court_does_not_exist"])
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "Court record not found" in err
+
+
+def test_court_ci_visibility_notes_format(env):
+    task = _make_task(env["tasks"], "t-note")
+    plan = _make_plan(env["plans"], task, "p-note")
+    rec = evaluate_constitutional_court(
+        task,
+        plan,
+        CourtEvidenceEnvelope(),
+        evaluated_by="human",
+        force_advisory=True,
+    )
+    assert env["courts"].format_ci_visibility_notes() == []
+    env["courts"].save(rec)
+    notes = env["courts"].format_ci_visibility_notes()
+    assert len(notes) == 1
+    note = notes[0]
+    assert note.startswith("court_record_present:")
+    assert f"record_id={rec.record_id}" in note
+    assert f"plan_id={rec.plan_id}" in note
+    assert f"plan_fingerprint={rec.plan_fingerprint}" in note
+    assert f"verdict={rec.verdict.value}" in note
+
+
+def test_ci_check_court_note_non_blocking(tmp_path: Path):
+    """Court note appears when a record exists; final_verdict/exit unchanged."""
+    import subprocess
+    import textwrap
+
+    from ai_dev_os.ci_engine import exit_code_for_run, run_ci_check
+    from ai_dev_os.ci_models import STAGE_ORDER
+
+    assert "court" not in " ".join(STAGE_ORDER)
+    assert list(STAGE_ORDER) == list(STAGE_ORDER)  # identity sanity
+
+    root = tmp_path / "ci_court"
+    (root / "src" / "pkg").mkdir(parents=True)
+    (root / "tests").mkdir()
+    (root / "config").mkdir()
+    (root / "docs").mkdir()
+    (root / "schemas").mkdir()
+    (root / ".github" / "workflows").mkdir(parents=True)
+    (root / "workspace" / "court_records").mkdir(parents=True)
+    (root / "src" / "pkg" / "__init__.py").write_text('__version__ = "0.0.1"\n', encoding="utf-8")
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "pkg"\nversion = "0.0.1"\n', encoding="utf-8"
+    )
+    (root / "tests" / "test_ok.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+    policy = (Path(__file__).resolve().parents[1] / "config" / "ci_policy.yaml").read_text(
+        encoding="utf-8"
+    )
+    (root / "config" / "ci_policy.yaml").write_text(policy, encoding="utf-8")
+    (root / "config" / "projects.example.yaml").write_text("projects: []\n", encoding="utf-8")
+    (root / "README.md").write_text("# Temp\nPackage 0.0.1\n", encoding="utf-8")
+    (root / "docs" / "ROADMAP.md").write_text("0.0.1\n", encoding="utf-8")
+    (root / "docs" / "PROJECT_CHRONICLE.md").write_text("0.0.1\n", encoding="utf-8")
+    (root / ".github" / "workflows" / "ci.yml").write_text(
+        textwrap.dedent(
+            """
+            name: ci
+            on: [push]
+            permissions:
+              contents: read
+            jobs:
+              local-ci:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                  - run: python -m pytest -q
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "init", "-b", "main"], cwd=root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ci@example.com"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "CI Test"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=root, check=True, capture_output=True)
+
+    skip = ["pytest_suite"]
+    baseline = run_ci_check(root, skip_stages=skip, persist=False)
+    baseline_verdict = baseline.final_verdict
+    baseline_exit = exit_code_for_run(baseline)
+    assert not any("court_record_present" in n for n in baseline.sanitized_notes)
+
+    task = _make_task(TaskStore(root / "workspace"), "t-ci-note")
+    plan = _make_plan(PlanStore(root / "workspace"), task, "p-ci-note")
+    rec = evaluate_constitutional_court(
+        task,
+        plan,
+        CourtEvidenceEnvelope(),
+        evaluated_by="human",
+        force_advisory=True,
+    )
+    CourtStore(root / "workspace").save(rec)
+
+    with_note = run_ci_check(root, skip_stages=skip, persist=False)
+    assert with_note.final_verdict == baseline_verdict
+    assert exit_code_for_run(with_note) == baseline_exit
+    assert any(
+        f"record_id={rec.record_id}" in n and "court_record_present:" in n
+        for n in with_note.sanitized_notes
+    )
+    # Notes must not flip a clean pass into pass_with_notes solely via Court visibility.
+    if baseline_verdict == "pass":
+        assert with_note.final_verdict == "pass"
+
+
+def test_validate_change_court_note_non_blocking(tmp_path: Path):
+    """validate-change info finding when Court record exists; verdict/exit unchanged."""
+    import subprocess
+    import textwrap
+
+    from ai_dev_os.ci_models import STAGE_ORDER
+    from ai_dev_os.ci_validate_change import exit_code_for_pr_summary, validate_change
+
+    assert "court_record" not in STAGE_ORDER
+    assert "constitutional" not in " ".join(STAGE_ORDER)
+
+    root = tmp_path / "vc_court"
+    (root / "src").mkdir(parents=True)
+    (root / "config").mkdir()
+    (root / "workspace" / "court_records").mkdir(parents=True)
+    (root / ".github" / "workflows").mkdir(parents=True)
+    (root / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+    policy = (Path(__file__).resolve().parents[1] / "config" / "ci_policy.yaml").read_text(
+        encoding="utf-8"
+    )
+    (root / "config" / "ci_policy.yaml").write_text(policy, encoding="utf-8")
+    (root / ".github" / "workflows" / "ci.yml").write_text(
+        textwrap.dedent(
+            """
+            name: ci
+            on: [push]
+            permissions:
+              contents: read
+            jobs:
+              local-ci:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "init", "-b", "main"], cwd=root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ci@example.com"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "CI Test"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=root, check=True, capture_output=True)
+    (root / "src" / "a.py").write_text("x = 2\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "change"], cwd=root, check=True, capture_output=True)
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD~1"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    baseline = validate_change(root, base=base, head="HEAD")
+    baseline_verdict = baseline.final_verdict
+    baseline_exit = exit_code_for_pr_summary(baseline)
+    assert not any(f.category == "court_record" for f in baseline.findings)
+
+    task = _make_task(TaskStore(root / "workspace"), "t-vc-note")
+    plan = _make_plan(PlanStore(root / "workspace"), task, "p-vc-note")
+    rec = evaluate_constitutional_court(
+        task,
+        plan,
+        CourtEvidenceEnvelope(),
+        evaluated_by="human",
+        force_advisory=True,
+    )
+    CourtStore(root / "workspace").save(rec)
+
+    with_note = validate_change(root, base=base, head="HEAD")
+    assert with_note.final_verdict == baseline_verdict
+    assert exit_code_for_pr_summary(with_note) == baseline_exit
+    court_findings = [f for f in with_note.findings if f.category == "court_record"]
+    assert len(court_findings) == 1
+    assert court_findings[0].severity == "info"
+    assert court_findings[0].blocker is False
+    assert court_findings[0].human_review_required is False
+    assert court_findings[0].failure_class == ""
+    assert f"record_id={rec.record_id}" in court_findings[0].summary
+    assert "none" not in with_note.failure_classes
+    assert "court_record" not in with_note.failure_classes
+
+
+def test_package_version_court_visibility():
+    from ai_dev_os import __version__
+
+    assert __version__ == "0.8.14"

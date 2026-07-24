@@ -35,14 +35,14 @@ Round 4E adds deterministic multi-project boundary checks: per-project `allowed_
 | ci-targeted selection quality (Round 4G) | Yes — import scan + broad-impact fail-safe |
 | MD parity for boundaries / validate-change (Round 4H) | Yes — `--format md`; JSON default unchanged |
 | Memory service + context consumer (Phase B3.3) | Yes — per-project opt-in; passive store; orch/providers untouched |
-| Constitutional Court (Project Sentinel) | Yes — deterministic `constitutional-check`; major-change approve-plan gate; no LLM |
+| Constitutional Court (Project Sentinel) | Yes — deterministic `constitutional-check` + `show-court-record`; optional CI note; major-change approve-plan gate; no LLM |
 | Workflow permissions | `contents: read` only |
 | Repository secrets / live provider / auto review / merge / deploy | **No** |
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
 | Round 4D2 live smoke | **LOCKED** |
 | CI run history + regression compare (`ci-history`/`ci-compare`) | Yes — local, deterministic |
-| Package version | **0.8.13** |
+| Package version | **0.8.14** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization), ACP, security scanners.
 
@@ -68,6 +68,11 @@ ai-dev-os validate-change --base HEAD~1 --format md
 # Round 4E boundaries (optional; also runs inside validate-change):
 ai-dev-os ci-boundaries --path demo_projects/calculator-demo/calculator/ops.py
 ai-dev-os ci-boundaries --path demo_projects/calculator-demo/calculator/ops.py --format md
+
+# Constitutional Court (Project Sentinel):
+ai-dev-os constitutional-check --task-id TID --plan-id PID --evaluated-by human --advisory
+ai-dev-os show-court-record --record-id RID
+ai-dev-os show-court-record --record-id RID --json
 
 # Round 4F ci-targeted — fast signal only; full pytest + ci-check remain authoritative:
 ai-dev-os ci-targeted --base HEAD~1
@@ -111,10 +116,11 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Phase B3.3: memory service layer + optional context_builder consumer (per-project opt-in) — package **0.8.11**; 4D2 still **LOCKED**
 - Project Sentinel: Constitution + Self-Build Strategy adopted as governance docs — package **0.8.12**; 4D2 still **LOCKED** (docs only; no capability unlock)
 - Project Sentinel: Constitutional Court deterministic preflight (`constitutional-check`) + major-change `approve_plan` gate — package **0.8.13**; governance gate only; 4D2 still **LOCKED**
+- Project Sentinel: `show-court-record` + optional non-blocking Court visibility note for `ci-check` / `validate-change` — package **0.8.14**; not a STAGE_ORDER stage; 4D2 still **LOCKED**
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4H + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, constitution, self-build strategy, constitutional court design, and project chronicle. Package version **0.8.13**.
+See `docs/` for architecture, Round 3A–4H + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, constitution, self-build strategy, constitutional court design, and project chronicle. Package version **0.8.14**.
 
 - [`docs/CONSTITUTIONAL_COURT_DESIGN.md`](docs/CONSTITUTIONAL_COURT_DESIGN.md) — Constitutional Court deterministic gate design
 - [`docs/CONSTITUTION.md`](docs/CONSTITUTION.md) — AI Development OS Constitution v1.0 (governance)

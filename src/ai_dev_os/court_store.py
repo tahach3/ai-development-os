@@ -60,3 +60,34 @@ class CourtStore:
         if not matches:
             return None
         return sorted(matches, key=lambda r: r.evaluated_at)[-1]
+
+    def list_all(self) -> list[CourtRecord]:
+        """Load all persisted Court records (deterministic path order)."""
+        records: list[CourtRecord] = []
+        for path in sorted(self.root.glob("*.json")):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            try:
+                records.append(CourtRecord.from_dict(data))
+            except (KeyError, TypeError, ValueError):
+                continue
+        return records
+
+    def format_ci_visibility_notes(self, *, limit: int = 5) -> list[str]:
+        """Informational CI notes when Court records exist — never a failure class.
+
+        Surfaces record_id, plan_id, plan_fingerprint, and verdict only.
+        """
+        notes: list[str] = []
+        for rec in self.list_all()[: max(0, limit)]:
+            verdict = rec.verdict.value if hasattr(rec.verdict, "value") else str(rec.verdict)
+            notes.append(
+                "court_record_present: "
+                f"record_id={rec.record_id} "
+                f"plan_id={rec.plan_id} "
+                f"plan_fingerprint={rec.plan_fingerprint} "
+                f"verdict={verdict}"
+            )
+        return notes

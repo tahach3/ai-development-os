@@ -603,7 +603,7 @@ def test_stalemate_missing_evidence_fail_closed():
 def test_package_version():
     from ai_dev_os import __version__
 
-    assert __version__ == "0.8.13"
+    assert __version__ == "0.8.14"
 
 
 def test_scenarios_defined():

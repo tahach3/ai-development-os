@@ -82,7 +82,7 @@ def test_version_constants_independent_of_package():
     assert MEMORY_FINGERPRINT_VERSION == "memory.1"
     import ai_dev_os
 
-    assert ai_dev_os.__version__ == "0.8.13"
+    assert ai_dev_os.__version__ == "0.8.14"
 
 
 def test_id_prefixes_and_immutability():

@@ -370,6 +370,26 @@ def validate_change(
             )
         )
 
+    # Optional Court visibility notes — informational only (never a blocker / failure class).
+    # Mirrors ci-boundaries' non-STAGE_ORDER posture for ci-check; here: info findings only.
+    try:
+        from .court_store import CourtStore
+
+        for note in CourtStore(root / "workspace").format_ci_visibility_notes():
+            summary.findings.append(
+                PRValidationFinding(
+                    path="workspace/court_records",
+                    category="court_record",
+                    severity="info",
+                    summary=note,
+                    failure_class="",
+                    blocker=False,
+                    human_review_required=False,
+                )
+            )
+    except Exception:  # noqa: BLE001 — optional visibility must not break validation
+        pass
+
     if any(p == "pyproject.toml" or p.endswith("/pyproject.toml") for p in paths):
         dep = check_dependency_policy(root, prohibited_names=pol.prohibited_dependency_names)
         for f in dep.findings:

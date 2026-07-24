@@ -157,7 +157,7 @@ Local CI, quality gates, and pull-request validation foundation:
 
 **Project Sentinel (governance docs):** [`CONSTITUTION.md`](CONSTITUTION.md) + [`SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md) adopted. Package **`0.8.12`**. Docs only — Round **4D2 remains LOCKED**; no runtime unlock.
 
-**Project Sentinel (Constitutional Court):** [`CONSTITUTIONAL_COURT_DESIGN.md`](CONSTITUTIONAL_COURT_DESIGN.md) — deterministic Article XIV preflight (`constitutional-check`), five pure evidence checks, Court records under `workspace/court_records/`, major-change gate on `approve_plan` (additional required artifact; does not replace human approval). Package **`0.8.13`**. Governance gate only — Round **4D2 remains LOCKED**; no LLM Court; no Equitify content reads; CI `STAGE_ORDER` / `4a.1` unchanged.
+**Project Sentinel (Constitutional Court):** [`CONSTITUTIONAL_COURT_DESIGN.md`](CONSTITUTIONAL_COURT_DESIGN.md) — deterministic Article XIV preflight (`constitutional-check`), five pure evidence checks, Court records under `workspace/court_records/`, major-change gate on `approve_plan` (additional required artifact; does not replace human approval). Package **`0.8.13`**. Read-only `show-court-record` + optional non-blocking Court visibility note on `ci-check` / `validate-change` (not a `STAGE_ORDER` stage; never gates verdict/exit). Package **`0.8.14`**. Governance gate + visibility only — Round **4D2 remains LOCKED**; no LLM Court; no Equitify content reads; CI `STAGE_ORDER` / `4a.1` unchanged.
 
 ## Later (only with explicit approval)
 

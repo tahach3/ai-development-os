@@ -47,4 +47,4 @@ def test_doc_consistency_stage_still_passes():
 
 
 def test_package_version_project_sentinel():
-    assert __version__ == "0.8.13"
+    assert __version__ == "0.8.14"

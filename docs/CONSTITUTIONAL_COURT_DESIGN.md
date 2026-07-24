@@ -1,10 +1,10 @@
 # Constitutional Court — Deterministic Gate Design
 
-**Status:** Implemented (package **0.8.13**) — deterministic local preflight; no LLM / no 4D2
+**Status:** Implemented (package **0.8.14**) — deterministic local preflight + `show-court-record` + optional CI visibility note; no LLM / no 4D2
 
 **Baseline (design):** package **0.8.12** · HEAD `92f1378` · branch `master`
 
-**Implementation:** package **0.8.13** · Article XIV Court checkers + `approve_plan` major-change gate
+**Implementation:** package **0.8.13** · Article XIV Court checkers + `approve_plan` major-change gate; package **0.8.14** · read-only `show-court-record` + optional non-blocking CI note
 
 **Constitution:** [`CONSTITUTION.md`](CONSTITUTION.md) Article XIV (Court); related I–II, V, VIII, X–XIII, XV, XVII
 
@@ -383,7 +383,7 @@ create-task → plan → submit-plan
 | After `submit-plan`, before `approve-plan` | **Required** if major; gate in `approve_plan` (future) reads latest Court record + fingerprints |
 | During implement | Not re-run unless plan content fingerprint changes (invalidate like approval invalidation) |
 | At `review_gate` | Orthogonal — code review; may *consume* Court record id as context later (not required v1) |
-| CI `validate-change` / `ci-check` | Optional future hook; **not** mandatory STAGE_ORDER insert in first implementation |
+| CI `validate-change` / `ci-check` | Optional **informational** note when a Court record exists (package **0.8.14**); **not** a STAGE_ORDER stage; never gates verdict/exit |
 | Orchestration / providers | **No** wiring; Court does not call providers |
 | Memory | **No** auto-store of Court prose; optional later “approved fact” propose is deferred |
 
@@ -415,7 +415,44 @@ Behavior:
 5. Exit codes: `0` pass / pass_with_notes; `2` rejected; `3` blocked; `4` usage/validation error.
 6. Never invokes providers, never reads `.env` secrets, never touches Equitify paths for content (sentinel fail only).
 
-Show helper (optional later): `show-court-record --record-id …`
+### 7.1 `show-court-record` (package **0.8.14**)
+
+Read-only visibility into a persisted Court record. Does **not** re-evaluate, mutate, or gate anything.
+
+```text
+ai-dev-os show-court-record --record-id ID [--json]
+```
+
+| Mode | Output shape |
+| --- | --- |
+| Default (human) | Lines: `Court record: <record_id>`, then indented `task_id`, `plan_id`, `project_id`, `verdict`, `required`, `failure_classes`, `next_action`, `plan_fingerprint`, `content_fingerprint`, `evaluated_by`, `evaluated_at` |
+| `--json` | Full `CourtRecord.to_dict()` JSON on stdout (same envelope as `constitutional-check --json`) |
+
+Exit codes: `0` on successful load; `1` if `--record-id` missing/unknown (`ValidationError`); never invokes Court evaluation.
+
+### 7.2 Optional CI / validate-change visibility note (package **0.8.14**)
+
+Mirrors Round 4E’s `ci-boundaries` posture relative to `ci-check`: **not** in `STAGE_ORDER`, never a mandatory stage, never a new failure class.
+
+When any Court record exists under `workspace/court_records/`, `ci-check` and `validate-change` may surface an informational note containing exactly:
+
+- `record_id`
+- `plan_id`
+- `plan_fingerprint`
+- `verdict`
+
+Example note text:
+
+```text
+court_record_present: record_id=<id> plan_id=<plan_id> plan_fingerprint=<fp> verdict=<verdict>
+```
+
+| Surface | Mechanism | Verdict / exit impact |
+| --- | --- | --- |
+| `ci-check` | Appended to `CIRun.sanitized_notes` **after** `_apply_verdict` (not via stage `.notes`) | **None** — `final_verdict` and exit code unchanged vs a run with no Court records |
+| `validate-change` | `PRValidationFinding` with `category=court_record`, `severity=info`, `blocker=false`, `human_review_required=false`, empty `failure_class` | **None** — aggregation ignores info findings; exit code unchanged |
+
+When no Court records exist, the note is **silently absent**. This is visibility only: it does not reinterpret Court verdicts, does not participate in `approve_plan`’s gate, and does not insert a CI stage.
 
 ---
 
@@ -479,9 +516,9 @@ Golden fixtures: JSON task/plan/evidence → expected verdict + rule_ids (determ
 | Equitify adapter / inspection | Deferred (fail closed only) |
 | Round 4D2 live models / paid APIs | **LOCKED** |
 | CEO override soft-bypass of rejected Court | Deferred |
-| Mandatory `ci-check` STAGE_ORDER insertion | Deferred |
+| Mandatory `ci-check` STAGE_ORDER insertion | Deferred (optional informational note only — §7.2) |
 | Vuln-DB-backed safety claims | Deferred (honesty: unavailable) |
-| Production Python modules / CLI / version bump | **After design approval** |
+| Production Python modules / CLI / version bump | Shipped through **0.8.14** for Court + visibility |
 
 ---
 

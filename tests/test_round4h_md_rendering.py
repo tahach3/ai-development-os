@@ -200,4 +200,4 @@ def test_cli_validate_change_format_md_vs_json():
 
 
 def test_package_version_round4h():
-    assert __version__ == "0.8.13"
+    assert __version__ == "0.8.14"

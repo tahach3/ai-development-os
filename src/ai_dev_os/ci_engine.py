@@ -159,9 +159,28 @@ def run_ci_check(
     except Exception:  # noqa: BLE001
         run.duration_seconds = 0.0
     _apply_verdict(run)
+    _attach_court_visibility_notes(root, run)
     if persist if persist is not None else pol.persist_results:
         _persist_run(root, pol, run)
     return run
+
+
+def _attach_court_visibility_notes(root: Path, run: CIRun) -> None:
+    """Optional Court visibility notes — appended after verdict; never gates CI.
+
+    Mirrors ci-boundaries posture: not in STAGE_ORDER, informational only.
+    Notes go onto sanitized_notes (not stage.notes) so final_verdict is unchanged.
+    """
+    try:
+        from .court_store import CourtStore
+
+        notes = CourtStore(root / "workspace").format_ci_visibility_notes()
+    except Exception:  # noqa: BLE001 — optional visibility must not break CI
+        return
+    if not notes:
+        return
+    combined = list(run.sanitized_notes) + notes
+    run.sanitized_notes = combined[:20]
 
 
 def _apply_verdict(run: CIRun) -> None:

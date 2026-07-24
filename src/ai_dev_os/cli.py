@@ -740,6 +740,34 @@ def cmd_constitutional_check(args: argparse.Namespace) -> int:
         return 4
 
 
+def cmd_show_court_record(args: argparse.Namespace) -> int:
+    """Read-only display of a persisted Constitutional Court record."""
+    from .court_store import CourtStore
+
+    try:
+        record = CourtStore().load(args.record_id)
+    except ValidationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    else:
+        verdict = record.verdict.value if hasattr(record.verdict, "value") else str(record.verdict)
+        print(f"Court record: {record.record_id}")
+        print(f"  task_id: {record.task_id}")
+        print(f"  plan_id: {record.plan_id}")
+        print(f"  project_id: {record.project_id}")
+        print(f"  verdict: {verdict}")
+        print(f"  required: {record.required}")
+        print(f"  failure_classes: {', '.join(record.failure_classes) or '(none)'}")
+        print(f"  next_action: {record.next_action}")
+        print(f"  plan_fingerprint: {record.plan_fingerprint}")
+        print(f"  content_fingerprint: {record.content_fingerprint}")
+        print(f"  evaluated_by: {record.evaluated_by}")
+        print(f"  evaluated_at: {record.evaluated_at}")
+    return 0
+
+
 def cmd_reject_plan(args: argparse.Namespace) -> int:
     try:
         plan = reject_plan(
@@ -2045,6 +2073,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_cc.add_argument("--output", default=None, help="Optional copy of Court record JSON")
     p_cc.add_argument("--json", action="store_true", help="Emit machine-readable Court record")
     p_cc.set_defaults(func=cmd_constitutional_check)
+
+    p_scr = sub.add_parser(
+        "show-court-record",
+        help="Show a persisted Constitutional Court record (read-only)",
+    )
+    p_scr.add_argument("--record-id", required=True, help="Court record id")
+    p_scr.add_argument("--json", action="store_true", help="Emit full Court record JSON")
+    p_scr.set_defaults(func=cmd_show_court_record)
 
     p_rp = sub.add_parser("reject-plan", help="Reject a plan")
     p_rp.add_argument("--plan-id", required=True)

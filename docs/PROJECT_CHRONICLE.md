@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-24 · **Package version:** `0.8.13` · **Round:** 4H + Phase B3.3 + Project Sentinel (Constitution / Self-Build Strategy + Constitutional Court)
+**As of:** 2026-07-24 · **Package version:** `0.8.14` · **Round:** 4H + Phase B3.3 + Project Sentinel (Constitution / Self-Build Strategy + Constitutional Court + visibility)
 
 ---
 
@@ -28,7 +28,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **Markdown rendering parity** lane (Round 4H, package `0.8.10`): deterministic `--format md` for `ci-boundaries` and `validate-change`, matching `ci-check` / `ci-targeted` report conventions; JSON default unchanged.
 - A **shared-memory service** lane (Phase B3.3, package `0.8.11`): audited lifecycle over B3.2 SQLite, per-registered-project `memory_enabled` opt-in, CLI verbs, optional `context_builder` approved-memory section; orchestration/provider paths remain memory-free; global default still disabled.
 - **Governance documents** (Project Sentinel, package `0.8.12`): [`docs/CONSTITUTION.md`](CONSTITUTION.md) and [`docs/SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md) adopted as permanent / long-term vision docs. **Does not** unlock Round 4D2, self-modification, memory auto-enable, or any runtime capability.
-- A **Constitutional Court** lane (Project Sentinel, package `0.8.13`): deterministic Article XIV preflight (`constitutional-check`) over structured evidence — five pure checks, auditable Court records, major-change `approve_plan` gate (additional required artifact). **Not** an LLM reviewer; **not** a 4D2 unlock; Equitify path sentinels only (no Equitify content reads); CI `STAGE_ORDER` unchanged.
+- A **Constitutional Court** lane (Project Sentinel, package `0.8.13`–`0.8.14`): deterministic Article XIV preflight (`constitutional-check`) over structured evidence — five pure checks, auditable Court records, major-change `approve_plan` gate (additional required artifact); read-only `show-court-record`; optional non-blocking Court visibility note on `ci-check` / `validate-change` (not in `STAGE_ORDER`). **Not** an LLM reviewer; **not** a 4D2 unlock; Equitify path sentinels only (no Equitify content reads); CI `STAGE_ORDER` / `4a.1` unchanged.
 
 ### It is not
 
@@ -449,6 +449,14 @@ Source: `docs/ROADMAP.md`.
 - Independence: required high/critical runs forbid `evaluated_by == planner_agent` (`self_review_forbidden`)
 - No LLM Court; no Equitify content reads (path/sentinel only); Round 4D2 remains **LOCKED**; CI `STAGE_ORDER` / schema `4a.1` unchanged
 - Package **`0.8.13`**
+
+### Project Sentinel — Court visibility (`show-court-record` + optional CI note)
+
+- Read-only CLI `show-court-record --record-id … [--json]` via `CourtStore.load()`
+- Optional informational note on `ci-check` (`sanitized_notes` after verdict) and `validate-change` (`severity=info` finding) when a Court record exists under `workspace/court_records/`
+- Surfaces `record_id`, `plan_id`, `plan_fingerprint`, `verdict` only — **never** a failure class; **never** changes `final_verdict` or exit code
+- Not a `STAGE_ORDER` stage (same optional posture as `ci-boundaries` vs `ci-check`); `approve_plan` gate semantics unchanged
+- Package **`0.8.14`**
 
 ---
 
