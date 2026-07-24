@@ -132,6 +132,7 @@ def cmd_register_project(args: argparse.Namespace) -> int:
         allowed_path_prefixes=list(args.allowed_prefix or []),
         prohibited_path_prefixes=list(args.prohibited_prefix or []),
         active=True,
+        memory_enabled=bool(getattr(args, "memory_enabled", False)),
     )
     try:
         registry.register(record, overwrite=bool(args.overwrite))
@@ -139,6 +140,8 @@ def cmd_register_project(args: argparse.Namespace) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     print(f"Registered project '{record.id}' at {record.root_path}")
+    if record.memory_enabled:
+        print("  memory_enabled: true")
     return 0
 
 
@@ -240,10 +243,280 @@ def cmd_build_context(args: argparse.Namespace) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     out_dir = Path(args.output) if args.output else (_repo_root() / "workspace" / "context")
-    packet = build_context_packet(task, root)
+    include_memory = bool(getattr(args, "include_memory", False))
+    try:
+        if include_memory:
+            from .memory import MemoryService
+            from .memory.errors import MemoryError
+
+            service = MemoryService(registry=registry, root=_repo_root())
+            packet = build_context_packet(
+                task,
+                root,
+                include_approved_memory=True,
+                memory_service=service,
+                registry=registry,
+            )
+        else:
+            packet = build_context_packet(task, root)
+    except Exception as exc:
+        # MemoryError is the expected fail-closed path for opt-in / service gates.
+        from .memory.errors import MemoryError
+
+        if isinstance(exc, MemoryError):
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        raise
     write_context_packet(packet, out_dir, task.id)
     print(f"Wrote {packet.markdown_path}")
     print(f"Wrote {packet.manifest_path}")
+    return 0
+
+
+def _memory_service_from_args(args: argparse.Namespace):
+    from .memory import MemoryService
+
+    registry = ProjectRegistry()
+    db_path = getattr(args, "db_path", None)
+    return MemoryService(
+        registry=registry,
+        db_path=db_path,
+        root=_repo_root(),
+    )
+
+
+def _print_memory_error(exc: Exception) -> int:
+    print(f"ERROR: {exc}", file=sys.stderr)
+    return 1
+
+
+def cmd_memory_enable(args: argparse.Namespace) -> int:
+    from .memory import set_project_memory_enabled
+    from .memory.errors import MemoryError
+
+    registry = ProjectRegistry()
+    try:
+        record = set_project_memory_enabled(registry, args.project_id, True)
+    except (ProjectRegistryError, MemoryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(
+        {"project_id": record.id, "memory_enabled": True},
+        indent=2,
+        sort_keys=True,
+    ))
+    return 0
+
+
+def cmd_memory_disable(args: argparse.Namespace) -> int:
+    from .memory import set_project_memory_enabled
+    from .memory.errors import MemoryError
+
+    registry = ProjectRegistry()
+    try:
+        record = set_project_memory_enabled(registry, args.project_id, False)
+    except (ProjectRegistryError, MemoryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(
+        {"project_id": record.id, "memory_enabled": False},
+        indent=2,
+        sort_keys=True,
+    ))
+    return 0
+
+
+def cmd_memory_propose(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    payload = {
+        "project_id": args.project_id,
+        "content": args.content,
+        "category": args.category,
+        "proposed_by": args.proposed_by,
+        "source_type": args.source_type,
+    }
+    if args.title:
+        payload["title"] = args.title
+    try:
+        role = MemoryActorRole(args.actor_role)
+        record = service.propose(
+            payload,
+            actor=args.proposed_by,
+            actor_role=role,
+        )
+    except (MemoryError, ValueError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_validate(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        record = service.validate(
+            args.project_id,
+            args.memory_id,
+            actor=args.actor,
+            actor_role=MemoryActorRole.OS_CONTROL_PLANE,
+        )
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_approve(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        record = service.approve(
+            args.project_id,
+            args.memory_id,
+            approver=args.approver,
+            actor=args.approver,
+            actor_role=MemoryActorRole.HUMAN_OPERATOR,
+        )
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_reject(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        record = service.reject(
+            args.project_id,
+            args.memory_id,
+            reason=args.reason,
+            actor=args.actor,
+            actor_role=MemoryActorRole.HUMAN_OPERATOR,
+        )
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_list(args: argparse.Namespace) -> int:
+    from .memory.domain import LifecycleStatus, MemoryClass
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        status = LifecycleStatus(args.lifecycle_status) if args.lifecycle_status else None
+        mclass = MemoryClass(args.memory_class) if args.memory_class else None
+        records = service.list_records(
+            args.project_id,
+            lifecycle_status=status,
+            memory_class=mclass,
+            limit=args.limit,
+        )
+    except (MemoryError, ValueError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    payload = [r.to_dict() for r in records]
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_retrieve(args: argparse.Namespace) -> int:
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        records = service.retrieve(args.project_id, limit=args.limit)
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    payload = [r.to_dict() for r in records]
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_archive(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        record = service.archive(
+            args.project_id,
+            args.memory_id,
+            actor=args.actor,
+            actor_role=MemoryActorRole.HUMAN_OPERATOR,
+        )
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_supersede(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        old_rec, new_rec = service.supersede(
+            args.project_id,
+            args.old_memory_id,
+            new_content=args.content,
+            actor=args.actor,
+            approver=args.approver,
+            title=args.title,
+            actor_role=MemoryActorRole.HUMAN_OPERATOR,
+        )
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(
+        {"old": old_rec.to_dict(), "new": new_rec.to_dict()},
+        indent=2,
+        sort_keys=True,
+    ))
+    return 0
+
+
+def cmd_memory_forget(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        record = service.forget(
+            args.project_id,
+            args.memory_id,
+            actor=args.actor,
+            actor_role=MemoryActorRole.HUMAN_OPERATOR,
+        )
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_memory_hard_delete(args: argparse.Namespace) -> int:
+    from .memory.domain import MemoryActorRole
+    from .memory.errors import MemoryError
+
+    service = _memory_service_from_args(args)
+    try:
+        record = service.hard_delete(
+            args.project_id,
+            args.memory_id,
+            actor=args.actor,
+            actor_role=MemoryActorRole.HUMAN_OPERATOR,
+        )
+    except (MemoryError, ProjectRegistryError) as exc:
+        return _print_memory_error(exc)
+    print(json.dumps(record.to_dict(), indent=2, sort_keys=True))
     return 0
 
 
@@ -1576,6 +1849,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_reg.add_argument("--allowed-prefix", action="append", default=[])
     p_reg.add_argument("--prohibited-prefix", action="append", default=[])
     p_reg.add_argument("--overwrite", action="store_true")
+    p_reg.add_argument(
+        "--memory-enabled",
+        action="store_true",
+        help="Opt this project into local shared memory (default: off)",
+    )
     p_reg.set_defaults(func=cmd_register_project)
 
     p_create = sub.add_parser("create-task", help="Create a draft task for a registered project")
@@ -1610,6 +1888,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_ctx = sub.add_parser("build-context", help="Build minimal context packet")
     p_ctx.add_argument("--task-id", required=True)
     p_ctx.add_argument("--output")
+    p_ctx.add_argument(
+        "--include-memory",
+        action="store_true",
+        help="Include approved project memory (requires per-project memory opt-in)",
+    )
     p_ctx.set_defaults(func=cmd_build_context)
 
     p_hand = sub.add_parser("prepare-handoff", help="Prepare role-specific manual handoff")
@@ -1732,6 +2015,118 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show shared-memory status (read-only; reports disabled by default)",
     )
     p_mem.set_defaults(func=cmd_memory_status)
+
+    p_mem_en = sub.add_parser(
+        "memory-enable",
+        help="Opt a registered project into local shared memory",
+    )
+    p_mem_en.add_argument("--project-id", required=True)
+    p_mem_en.set_defaults(func=cmd_memory_enable)
+
+    p_mem_dis = sub.add_parser(
+        "memory-disable",
+        help="Disable shared memory for a registered project (does not delete rows)",
+    )
+    p_mem_dis.add_argument("--project-id", required=True)
+    p_mem_dis.set_defaults(func=cmd_memory_disable)
+
+    from .memory.domain import MemoryCategory, MemorySourceType, MemoryActorRole
+
+    p_mem_prop = sub.add_parser("memory-propose", help="Propose a candidate memory")
+    p_mem_prop.add_argument("--project-id", required=True)
+    p_mem_prop.add_argument("--content", required=True)
+    p_mem_prop.add_argument(
+        "--category",
+        required=True,
+        choices=[c.value for c in MemoryCategory],
+    )
+    p_mem_prop.add_argument("--proposed-by", required=True)
+    p_mem_prop.add_argument(
+        "--source-type",
+        default=MemorySourceType.OPERATOR.value,
+        choices=[s.value for s in MemorySourceType],
+    )
+    p_mem_prop.add_argument("--title", default=None)
+    p_mem_prop.add_argument(
+        "--actor-role",
+        default=MemoryActorRole.HUMAN_OPERATOR.value,
+        choices=[r.value for r in MemoryActorRole],
+    )
+    p_mem_prop.add_argument("--db-path", default=None)
+    p_mem_prop.set_defaults(func=cmd_memory_propose)
+
+    p_mem_val = sub.add_parser("memory-validate", help="Validate a proposed memory")
+    p_mem_val.add_argument("--project-id", required=True)
+    p_mem_val.add_argument("--memory-id", required=True)
+    p_mem_val.add_argument("--actor", default="os_control_plane")
+    p_mem_val.add_argument("--db-path", default=None)
+    p_mem_val.set_defaults(func=cmd_memory_validate)
+
+    p_mem_apr = sub.add_parser("memory-approve", help="Approve a validated memory")
+    p_mem_apr.add_argument("--project-id", required=True)
+    p_mem_apr.add_argument("--memory-id", required=True)
+    p_mem_apr.add_argument("--approver", required=True)
+    p_mem_apr.add_argument("--db-path", default=None)
+    p_mem_apr.set_defaults(func=cmd_memory_approve)
+
+    p_mem_rej = sub.add_parser("memory-reject", help="Reject a candidate memory")
+    p_mem_rej.add_argument("--project-id", required=True)
+    p_mem_rej.add_argument("--memory-id", required=True)
+    p_mem_rej.add_argument("--reason", required=True)
+    p_mem_rej.add_argument("--actor", default="operator")
+    p_mem_rej.add_argument("--db-path", default=None)
+    p_mem_rej.set_defaults(func=cmd_memory_reject)
+
+    p_mem_list = sub.add_parser("memory-list", help="List project memories")
+    p_mem_list.add_argument("--project-id", required=True)
+    p_mem_list.add_argument("--lifecycle-status", default=None)
+    p_mem_list.add_argument("--memory-class", default=None)
+    p_mem_list.add_argument("--limit", type=int, default=None)
+    p_mem_list.add_argument("--db-path", default=None)
+    p_mem_list.set_defaults(func=cmd_memory_list)
+
+    p_mem_ret = sub.add_parser(
+        "memory-retrieve",
+        help="Retrieve approved memories (deterministic order)",
+    )
+    p_mem_ret.add_argument("--project-id", required=True)
+    p_mem_ret.add_argument("--limit", type=int, default=None)
+    p_mem_ret.add_argument("--db-path", default=None)
+    p_mem_ret.set_defaults(func=cmd_memory_retrieve)
+
+    p_mem_arc = sub.add_parser("memory-archive", help="Archive an approved/superseded memory")
+    p_mem_arc.add_argument("--project-id", required=True)
+    p_mem_arc.add_argument("--memory-id", required=True)
+    p_mem_arc.add_argument("--actor", default="operator")
+    p_mem_arc.add_argument("--db-path", default=None)
+    p_mem_arc.set_defaults(func=cmd_memory_archive)
+
+    p_mem_sup = sub.add_parser("memory-supersede", help="Supersede an approved memory")
+    p_mem_sup.add_argument("--project-id", required=True)
+    p_mem_sup.add_argument("--old-memory-id", required=True)
+    p_mem_sup.add_argument("--content", required=True)
+    p_mem_sup.add_argument("--approver", required=True)
+    p_mem_sup.add_argument("--actor", default="operator")
+    p_mem_sup.add_argument("--title", default=None)
+    p_mem_sup.add_argument("--db-path", default=None)
+    p_mem_sup.set_defaults(func=cmd_memory_supersede)
+
+    p_mem_fg = sub.add_parser("memory-forget", help="Soft-forget a memory (exclude from retrieve)")
+    p_mem_fg.add_argument("--project-id", required=True)
+    p_mem_fg.add_argument("--memory-id", required=True)
+    p_mem_fg.add_argument("--actor", default="operator")
+    p_mem_fg.add_argument("--db-path", default=None)
+    p_mem_fg.set_defaults(func=cmd_memory_forget)
+
+    p_mem_hd = sub.add_parser(
+        "memory-hard-delete",
+        help="Erase memory content (human; audit retained)",
+    )
+    p_mem_hd.add_argument("--project-id", required=True)
+    p_mem_hd.add_argument("--memory-id", required=True)
+    p_mem_hd.add_argument("--actor", default="operator")
+    p_mem_hd.add_argument("--db-path", default=None)
+    p_mem_hd.set_defaults(func=cmd_memory_hard_delete)
 
     p_cs = sub.add_parser(
         "create-session",

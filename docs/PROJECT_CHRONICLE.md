@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-24 · **Package version:** `0.8.10` · **Round:** 4H (MD rendering parity) + Phase B3.2 (shared memory SQLite, disabled by default)
+**As of:** 2026-07-24 · **Package version:** `0.8.11` · **Round:** 4H (MD rendering parity) + Phase B3.3 (memory service, per-project opt-in)
 
 ---
 
@@ -26,6 +26,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **ci-targeted selection quality** lane (Round 4G, package `0.8.8`): import-string scanning for changed modules plus broad-impact fail-safe notes — never a silent empty-green selection for high-fanout paths.
 - A **shared-memory SQLite persistence** lane (Phase B3.2, package `0.8.9`): local stdlib `sqlite3` schema/migrations/repository behind disabled-by-default config; read-only `memory-status`; no service orchestration or auto-enable.
 - A **Markdown rendering parity** lane (Round 4H, package `0.8.10`): deterministic `--format md` for `ci-boundaries` and `validate-change`, matching `ci-check` / `ci-targeted` report conventions; JSON default unchanged.
+- A **shared-memory service** lane (Phase B3.3, package `0.8.11`): audited lifecycle over B3.2 SQLite, per-registered-project `memory_enabled` opt-in, CLI verbs, optional `context_builder` approved-memory section; orchestration/provider paths remain memory-free; global default still disabled.
 
 ### It is not
 
@@ -419,6 +420,16 @@ Source: `docs/ROADMAP.md`.
 - No schema/`STAGE_ORDER` change; memory untouched/disabled; Equitify untouched; Round 4D2 remains **LOCKED**
 - Package **`0.8.10`**
 
+### Phase B3.3 — memory service layer + first consumer (per-project opt-in)
+
+- Design: [`docs/PHASE_B3_3_MEMORY_SERVICE_DESIGN.md`](PHASE_B3_3_MEMORY_SERVICE_DESIGN.md)
+- `MemoryService` lifecycle over B3.2 repository: propose/validate/approve/reject/supersede/archive/forget/hard-delete + audited `memory_events`
+- Per-registered-project `ProjectRecord.memory_enabled` (default false); no opt-in → `MemoryDisabledError`; global `DEFAULT_MEMORY_CONFIG.enabled` stays false
+- CLI: `memory-enable` / `memory-disable` / `memory-propose` / `memory-validate` / `memory-approve` / `memory-reject` / `memory-list` / `memory-retrieve` / `memory-archive` / `memory-supersede` / `memory-forget` / `memory-hard-delete`
+- First consumer: optional `build_context_packet(..., include_approved_memory=True)` / `build-context --include-memory`; default packets byte-identical for non-opted projects; orchestration/provider callers unchanged
+- No live-model wiring; no auto-populate; Equitify untouched; Round 4D2 remains **LOCKED**; `STAGE_ORDER` / `4a.1` unchanged
+- Package **`0.8.11`**
+
 ---
 
 ## 11. Equitify is not connected
@@ -464,6 +475,7 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/SHARED_MEMORY_DESIGN.md` | Phase B1 shared-memory design |
 | `docs/SHARED_MEMORY_IMPLEMENTATION_PLAN.md` | Phase B2 implementation decisions; B3.1 domain foundations landed |
 | `docs/SHARED_MEMORY_SQLITE_PERSISTENCE.md` | Phase B3.2 SQLite persistence (disabled by default) |
+| `docs/PHASE_B3_3_MEMORY_SERVICE_DESIGN.md` | Phase B3.3 memory service + context_builder consumer |
 | `exports/AI_Development_OS_Project_Chronicle.md` | Downloadable chronicle copy |
 
 ---

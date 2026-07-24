@@ -22,9 +22,12 @@ from .domain import (
     MemoryRecord,
     MemorySourceType,
     Sensitivity,
+    is_valid_memory_event_id,
     is_valid_memory_id,
+    new_memory_event_id,
     new_memory_link_id,
 )
+from .sqlite_schema import MEMORY_ACTOR_KIND_VALUES, MEMORY_EVENT_ACTION_VALUES
 from .errors import (
     MemoryConflictError,
     MemoryDisabledError,
@@ -282,6 +285,113 @@ class SqliteMemoryRepository:
         except Exception:
             conn.rollback()
             raise
+        finally:
+            conn.close()
+
+    def append_event(
+        self,
+        *,
+        project_id: str,
+        action: str,
+        actor: str,
+        actor_kind: str,
+        memory_id: str | None = None,
+        from_class: str | None = None,
+        to_class: str | None = None,
+        from_status: str | None = None,
+        to_status: str | None = None,
+        detail_json: str | None = None,
+        event_id: str | None = None,
+        created_at: str | None = None,
+    ) -> str:
+        """Append an audit row to ``memory_events`` (insert-only)."""
+        if not project_id or not str(project_id).strip():
+            raise MemoryValidationError("project_id must be non-empty")
+        if not actor or not str(actor).strip():
+            raise MemoryValidationError("actor must be non-empty")
+        if action not in MEMORY_EVENT_ACTION_VALUES:
+            raise MemoryValidationError(f"Unsupported memory event action: {action!r}")
+        if actor_kind not in MEMORY_ACTOR_KIND_VALUES:
+            raise MemoryValidationError(f"Unsupported actor_kind: {actor_kind!r}")
+        eid = event_id or new_memory_event_id()
+        if not is_valid_memory_event_id(eid):
+            raise MemoryValidationError(f"Invalid event_id format: {eid!r}")
+        if memory_id is not None and not is_valid_memory_id(memory_id):
+            raise MemoryValidationError(f"Invalid memory_id format: {memory_id!r}")
+        ts = created_at or utc_now_iso()
+        conn = self._connect()
+        try:
+            conn.execute(
+                "INSERT INTO memory_events "
+                "(event_id, memory_id, project_id, action, actor, actor_kind, "
+                "from_class, to_class, from_status, to_status, detail_json, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    eid,
+                    memory_id,
+                    project_id,
+                    action,
+                    actor,
+                    actor_kind,
+                    from_class,
+                    to_class,
+                    from_status,
+                    to_status,
+                    detail_json,
+                    ts,
+                ),
+            )
+            conn.commit()
+            return eid
+        except sqlite3.IntegrityError as exc:
+            conn.rollback()
+            raise MemoryConflictError(
+                "Memory event append refused by database constraints"
+            ) from exc
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def list_events(
+        self,
+        project_id: str,
+        *,
+        memory_id: str | None = None,
+        limit: int | None = None,
+    ) -> tuple[dict[str, object], ...]:
+        """List audit events in deterministic order (created_at, event_id)."""
+        if not project_id or not str(project_id).strip():
+            raise MemoryValidationError("project_id must be non-empty")
+        cap = self._config.max_retrieve_limit
+        default = self._config.default_retrieve_limit
+        effective_limit = default if limit is None else int(limit)
+        if effective_limit < 1:
+            raise MemoryValidationError("limit must be >= 1")
+        if effective_limit > cap:
+            raise MemoryValidationError(
+                f"limit exceeds max_retrieve_limit ({cap})"
+            )
+        clauses = ["project_id = ?"]
+        params: list[object] = [project_id]
+        if memory_id is not None:
+            if not is_valid_memory_id(memory_id):
+                raise MemoryValidationError(f"Invalid memory_id format: {memory_id!r}")
+            clauses.append("memory_id = ?")
+            params.append(memory_id)
+        where = " AND ".join(clauses)
+        sql = (
+            "SELECT event_id, memory_id, project_id, action, actor, actor_kind, "
+            "from_class, to_class, from_status, to_status, detail_json, created_at "
+            f"FROM memory_events WHERE {where} "
+            "ORDER BY created_at ASC, event_id ASC LIMIT ?"
+        )
+        params.append(effective_limit)
+        conn = self._connect()
+        try:
+            rows = conn.execute(sql, params).fetchall()
+            return tuple({k: row[k] for k in row.keys()} for row in rows)
         finally:
             conn.close()
 

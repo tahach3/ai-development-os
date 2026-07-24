@@ -1,10 +1,14 @@
 # AI Development Operating System
 
-Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1–4D1.3 **provider readiness** (no live prompts; Round 4D2 locked), Round 4E **multi-project boundary enforcement**, Round 4F **CI ergonomics** (opt-in flaky isolation, coverage notes, PR `ci-targeted`), Round 4G **ci-targeted selection quality** (import-string scan + broad-impact fail-safe), and Round 4H **Markdown rendering parity** for `ci-boundaries` / `validate-change`.
+Local-first orchestration layer for multi-model software work (Claude / Cursor / Codex) with **manual handoff**, Round 3A **safe local pytest**, Round 3B **controlled provider adapters**, Round 3C **bounded simulated orchestration**, Round 4A **local CI / quality gates / PR validation**, Round 4B **first private remote GitHub Actions validation**, Round 4C **evidence-first audience-specific reporting**, Round 4D1–4D1.3 **provider readiness** (no live prompts; Round 4D2 locked), Round 4E **multi-project boundary enforcement**, Round 4F **CI ergonomics** (opt-in flaky isolation, coverage notes, PR `ci-targeted`), Round 4G **ci-targeted selection quality** (import-string scan + broad-impact fail-safe), Round 4H **Markdown rendering parity** for `ci-boundaries` / `validate-change`, and Phase B3.3 **per-project memory service** (opt-in; passive store).
+
+## Phase B3.3 status
+
+Phase B3.3 adds a local memory service layer (propose/validate/approve/reject/supersede/archive/forget/hard-delete) over B3.2 SQLite, gated by per-registered-project `memory_enabled` (default off). Optional `build-context --include-memory` may attach approved memories for opted-in projects only. Orchestration/provider paths stay memory-free. Global `DEFAULT_MEMORY_CONFIG.enabled` remains **false**.
 
 ## Round 4H status
 
-Round 4H adds deterministic `--format md` summaries for `ci-boundaries` and `validate-change` (same conventions as `ci-check` / `ci-targeted` Markdown). JSON remains the default; exit codes and envelope shapes unchanged. **STAGE_ORDER** and CI schema **`4a.1`** unchanged; memory stays disabled.
+Round 4H adds deterministic `--format md` summaries for `ci-boundaries` and `validate-change` (same conventions as `ci-check` / `ci-targeted` Markdown). JSON remains the default; exit codes and envelope shapes unchanged. **STAGE_ORDER** and CI schema **`4a.1`** unchanged; memory stays disabled globally by default.
 
 ## Round 4G status
 
@@ -30,13 +34,14 @@ Round 4E adds deterministic multi-project boundary checks: per-project `allowed_
 | CI ergonomics (Round 4F) | Yes — opt-in flaky isolation, coverage notes, PR `ci-targeted` |
 | ci-targeted selection quality (Round 4G) | Yes — import scan + broad-impact fail-safe |
 | MD parity for boundaries / validate-change (Round 4H) | Yes — `--format md`; JSON default unchanged |
+| Memory service + context consumer (Phase B3.3) | Yes — per-project opt-in; passive store; orch/providers untouched |
 | Workflow permissions | `contents: read` only |
 | Repository secrets / live provider / auto review / merge / deploy | **No** |
 | Vulnerability database queried | **No** |
 | Equitify connected | **No** |
 | Round 4D2 live smoke | **LOCKED** |
 | CI run history + regression compare (`ci-history`/`ci-compare`) | Yes — local, deterministic |
-| Package version | **0.8.10** |
+| Package version | **0.8.11** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization), ACP, security scanners.
 
@@ -102,11 +107,13 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Round 4G: `ci-targeted` selection quality (import-string scan + broad-impact fail-safe) — package **0.8.8**; 4D2 still **LOCKED**
 - Phase B3.2: shared memory SQLite persistence (stdlib only, **disabled by default**) — package **0.8.9**; read-only `memory-status`; 4D2 still **LOCKED**
 - Round 4H: Markdown rendering parity for `ci-boundaries` / `validate-change` — package **0.8.10**; 4D2 still **LOCKED**
+- Phase B3.3: memory service layer + optional context_builder consumer (per-project opt-in) — package **0.8.11**; 4D2 still **LOCKED**
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4H + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.10**.
+See `docs/` for architecture, Round 3A–4H + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.11**.
 
+- [`docs/PHASE_B3_3_MEMORY_SERVICE_DESIGN.md`](docs/PHASE_B3_3_MEMORY_SERVICE_DESIGN.md) — Phase B3.3 memory service + first consumer
 - [`docs/ROUND_4H_MD_RENDERING_PARITY_DESIGN.md`](docs/ROUND_4H_MD_RENDERING_PARITY_DESIGN.md) — Round 4H Markdown rendering parity
 - [`docs/SHARED_MEMORY_SQLITE_PERSISTENCE.md`](docs/SHARED_MEMORY_SQLITE_PERSISTENCE.md) — Phase B3.2 SQLite persistence design
 - [`docs/ROUND_4G_CI_TARGETED_SELECTION_DESIGN.md`](docs/ROUND_4G_CI_TARGETED_SELECTION_DESIGN.md) — Round 4G ci-targeted selection quality

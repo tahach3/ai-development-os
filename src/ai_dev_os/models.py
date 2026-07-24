@@ -312,6 +312,8 @@ class ProjectRecord:
     prohibited_path_prefixes: list[str] = field(default_factory=list)
     active: bool = True
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Phase B3.3 — per-project memory opt-in (default False; never global).
+    memory_enabled: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -328,6 +330,7 @@ class ProjectRecord:
             prohibited_path_prefixes=list(data.get("prohibited_path_prefixes") or []),
             active=bool(data.get("active", True)),
             metadata=dict(data.get("metadata") or {}),
+            memory_enabled=bool(data.get("memory_enabled", False)),
         )
 
 

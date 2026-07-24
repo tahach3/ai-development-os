@@ -5,10 +5,14 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .models import Task, utc_now_iso
 from .routing import get_budget_limits, select_token_budget_band
+
+if TYPE_CHECKING:
+    from .memory.service import MemoryService
+    from .project_registry import ProjectRegistry
 
 
 @dataclass
@@ -25,8 +29,17 @@ def build_context_packet(
     *,
     include_paths: list[str] | None = None,
     notes: str | None = None,
+    include_approved_memory: bool = False,
+    memory_service: MemoryService | None = None,
+    registry: ProjectRegistry | None = None,
 ) -> ContextPacket:
-    """Build a minimal markdown packet + JSON manifest for manual handoff."""
+    """Build a minimal markdown packet + JSON manifest for manual handoff.
+
+    ``include_approved_memory`` defaults to False so existing callers
+    (orchestration, providers) remain byte-identical. When True, the project
+    must be opted in via ``ProjectRecord.memory_enabled`` and a
+    ``MemoryService`` (or constructible via ``registry``) is required.
+    """
     root = Path(project_root)
     band = task.token_budget_band or select_token_budget_band(task)
     budget = get_budget_limits(band)
@@ -97,6 +110,33 @@ def build_context_packet(
     if notes:
         lines.extend(["", "## Notes", notes])
 
+    memory_ids: list[str] = []
+    if include_approved_memory:
+        service = memory_service
+        if service is None:
+            if registry is None:
+                from .memory.errors import MemoryDisabledError
+
+                raise MemoryDisabledError(
+                    "include_approved_memory requires a MemoryService or ProjectRegistry"
+                )
+            from .memory.service import MemoryService as _MemoryService
+
+            service = _MemoryService(registry=registry)
+        hits = service.retrieve(task.project_id)
+        memory_ids = [h.memory_id for h in hits]
+        if hits:
+            lines.extend(["", "## Approved Project Memory"])
+            for hit in hits:
+                title = hit.title or hit.memory_id
+                lines.append(f"- `{hit.memory_id}` ({hit.category.value}): {title}")
+                # One-line content preview; full content stays in the store.
+                preview = (hit.content or "").strip().replace("\n", " ")
+                if len(preview) > 200:
+                    preview = preview[:197] + "..."
+                if preview:
+                    lines.append(f"  - {preview}")
+
     markdown = "\n".join(lines) + "\n"
     manifest = {
         "task_id": task.id,
@@ -111,6 +151,11 @@ def build_context_packet(
         "full_repo_dump": False,
         "automation_status": "manual_handoff_required",
     }
+    # Only add memory keys when explicitly requested — keeps default packets
+    # byte-identical in shape to pre-B3.3 (aside from created_at).
+    if include_approved_memory:
+        manifest["approved_memory_ids"] = memory_ids
+        manifest["include_approved_memory"] = True
     return ContextPacket(markdown=markdown, manifest=manifest)
 
 

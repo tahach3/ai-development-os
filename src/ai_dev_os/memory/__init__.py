@@ -61,6 +61,7 @@ from .sqlite_migrations import (
     checksum_migration_sql,
 )
 from .sqlite_repository import SqliteMemoryRepository
+from .service import MemoryService, set_project_memory_enabled
 from .sqlite_schema import (
     MEMORY_ACTOR_KIND_VALUES,
     MEMORY_EVENT_ACTION_VALUES,
@@ -120,6 +121,7 @@ __all__ = [
     "MemoryPersistenceError",
     "MemoryRecord",
     "MemorySecurityError",
+    "MemoryService",
     "MemorySourceType",
     "MemoryValidationError",
     "Sensitivity",
@@ -146,6 +148,7 @@ __all__ = [
     "open_memory_connection",
     "prepare_candidate_record",
     "refuse_secrets_in_text",
+    "set_project_memory_enabled",
     "validate_class_status_pairing",
     "validate_content_hash",
     "validate_lifecycle_transition",

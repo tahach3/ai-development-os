@@ -199,4 +199,4 @@ def test_cli_parser_still_requires_base():
 
 
 def test_package_version_round4g():
-    assert __version__ == "0.8.10"
+    assert __version__ == "0.8.11"
