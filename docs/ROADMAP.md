@@ -155,6 +155,8 @@ Local CI, quality gates, and pull-request validation foundation:
 
 **Phase B3.3 (memory service + first consumer):** [`PHASE_B3_3_MEMORY_SERVICE_DESIGN.md`](PHASE_B3_3_MEMORY_SERVICE_DESIGN.md) — lifecycle service over B3.2 SQLite, per-project `memory_enabled` opt-in, CLI verbs, optional `context_builder` retrieval. Package **`0.8.11`**. Global memory default remains disabled; orchestration/provider paths do not consume memory; 4D2 locked; Equitify untouched.
 
+**Project Sentinel (governance docs):** [`CONSTITUTION.md`](CONSTITUTION.md) + [`SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md) adopted. Package **`0.8.12`**. Docs only — Round **4D2 remains LOCKED**; no runtime unlock.
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs
@@ -168,6 +170,25 @@ Local CI, quality gates, and pull-request validation foundation:
 ## Longer-term vision (not implementation status)
 
 Completed rounds above remain authoritative for **what is implemented**. Blueprint Phases A–I in [`docs/AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md`](AI_OS_OPEN_SOURCE_INTEGRATION_MASTER_BLUEPRINT.md) define the longer-term vision beyond Round 4B. Each future implementation round requires separate approval and planning.
+
+Governance documents (adopted, not capability unlocks): [`docs/CONSTITUTION.md`](CONSTITUTION.md) and [`docs/SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md). Adopting them does **not** unlock Round 4D2, self-modification, or any new runtime path.
+
+### Self-Build Strategy Phase A–H vs real completion state
+
+Honest mapping of [`docs/SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md) Development Order (Phase **A–H**) against this repo. **Phase A is not closed** and is **not** imminent: remaining Version-1 items below stay behind the **Round 4D2** gate (live model / paid-API smoke — still **LOCKED**).
+
+| Strategy phase | Intent | Real state (this repo) |
+| --- | --- | --- |
+| **A — Finish Version 1** | Task → Plan → Approval → Implementation → Tests → Independent Review → Repair → Final Report with real providers | **Not closed.** Local simulated orchestration (3C), readiness (4D1.x), CI/reporting, and memory foundations exist; **remaining** real implementation provider, independent review provider, end-to-end real execution, and cost/token tracking are **blocked by Round 4D2**. Do not treat Phase A as done or imminent. |
+| **B — Governed memory** | Controlled memory lifecycle | **Complete** for shipped scope: Phase **B3.1–B3.3** (domain, SQLite persistence, service + optional context consumer; per-project opt-in; global default still disabled). |
+| **C — Real implementation and review providers** | Live impl + independent review | **Not started** as live capability; readiness-only through 4D1.3; **4D2 LOCKED**. |
+| **D — LiteLLM gateway** | Universal API model gateway | **Not started** (blueprint / vision only). |
+| **E — Benchmark engine** | Systematic improvement measurement | **Partial** local behavioral / CI metrics only; Strategy-scale benchmark engine **not** built. |
+| **F — Research Intelligence Agent** | Evidence-backed research agent | **Not started**. |
+| **G — Digital Employees** | Specialized digital-employee roles | **Not started**. |
+| **H — Automation and business integrations** | Broader automation / business adapters | **Not started**; Equitify remains disconnected. |
+
+**Numbering note:** Constitution Article XVI uses Phase **1–7** (Complete Version 1 → Governed memory → Real providers → Multi-model routing → Research intelligence → Digital employees → Safe self-improvement). Self-Build Strategy uses Phase **A–H** (Finish Version 1 → Governed memory → Real providers → LiteLLM → Benchmark → Research Intelligence → Digital Employees → Automation/business). Both are long-term vision labels — **not** interchangeable with Round 3/4 package milestones, and **not** claims of completion.
 
 **Phase B1 (design only):** [`SHARED_MEMORY_DESIGN.md`](SHARED_MEMORY_DESIGN.md) — controlled shared-memory design for a future SQLite prototype.
 

@@ -1,5 +1,7 @@
 # Project Boundaries
 
+> Formalized under [`docs/CONSTITUTION.md`](CONSTITUTION.md) (Articles VIII / XV — Engineering Law and Business Separation). This file remains the operational boundary ruleset; the Constitution does not replace it.
+
 ## Registry rule
 
 Work is allowed **only** for projects present in `config/projects.yaml` (created via `ai-dev-os init` / `register-project`).

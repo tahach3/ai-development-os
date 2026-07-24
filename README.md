@@ -41,7 +41,7 @@ Round 4E adds deterministic multi-project boundary checks: per-project `allowed_
 | Equitify connected | **No** |
 | Round 4D2 live smoke | **LOCKED** |
 | CI run history + regression compare (`ci-history`/`ci-compare`) | Yes — local, deterministic |
-| Package version | **0.8.11** |
+| Package version | **0.8.12** |
 
 **Still not included:** paid LLM APIs, LangChain/CrewAI/AutoGen, dashboards, browser automation, Equitify integration, auto-merge/push/deploy, arbitrary patch engines, credential inspection, live provider smoke (requires separate Round 4D2 authorization), ACP, security scanners.
 
@@ -108,11 +108,14 @@ ai-dev-os provider-readiness --validate-pin cursor
 - Phase B3.2: shared memory SQLite persistence (stdlib only, **disabled by default**) — package **0.8.9**; read-only `memory-status`; 4D2 still **LOCKED**
 - Round 4H: Markdown rendering parity for `ci-boundaries` / `validate-change` — package **0.8.10**; 4D2 still **LOCKED**
 - Phase B3.3: memory service layer + optional context_builder consumer (per-project opt-in) — package **0.8.11**; 4D2 still **LOCKED**
+- Project Sentinel: Constitution + Self-Build Strategy adopted as governance docs — package **0.8.12**; 4D2 still **LOCKED** (docs only; no capability unlock)
 
 ## Docs
 
-See `docs/` for architecture, Round 3A–4H + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, and project chronicle. Package version **0.8.11**.
+See `docs/` for architecture, Round 3A–4H + hardening designs, reporting/readiness standards, security, model roles, zero-click limits, roadmap, constitution, self-build strategy, and project chronicle. Package version **0.8.12**.
 
+- [`docs/CONSTITUTION.md`](docs/CONSTITUTION.md) — AI Development OS Constitution v1.0 (governance)
+- [`docs/SELF_BUILD_STRATEGY.md`](docs/SELF_BUILD_STRATEGY.md) — Self-Build Strategy (long-term vision, not implementation status)
 - [`docs/PHASE_B3_3_MEMORY_SERVICE_DESIGN.md`](docs/PHASE_B3_3_MEMORY_SERVICE_DESIGN.md) — Phase B3.3 memory service + first consumer
 - [`docs/ROUND_4H_MD_RENDERING_PARITY_DESIGN.md`](docs/ROUND_4H_MD_RENDERING_PARITY_DESIGN.md) — Round 4H Markdown rendering parity
 - [`docs/SHARED_MEMORY_SQLITE_PERSISTENCE.md`](docs/SHARED_MEMORY_SQLITE_PERSISTENCE.md) — Phase B3.2 SQLite persistence design

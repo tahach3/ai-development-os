@@ -1,5 +1,7 @@
 # Security Model
 
+> Formalized under [`docs/CONSTITUTION.md`](CONSTITUTION.md) (Article X — Security Law). This file remains the operational security ruleset; the Constitution does not replace it.
+
 ## Hard prohibitions (product)
 
 - No paid LLM API keys or network model calls by default

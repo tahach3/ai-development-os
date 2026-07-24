@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-24 · **Package version:** `0.8.11` · **Round:** 4H (MD rendering parity) + Phase B3.3 (memory service, per-project opt-in)
+**As of:** 2026-07-24 · **Package version:** `0.8.12` · **Round:** 4H + Phase B3.3 + Project Sentinel (Constitution / Self-Build Strategy governance docs)
 
 ---
 
@@ -27,6 +27,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **shared-memory SQLite persistence** lane (Phase B3.2, package `0.8.9`): local stdlib `sqlite3` schema/migrations/repository behind disabled-by-default config; read-only `memory-status`; no service orchestration or auto-enable.
 - A **Markdown rendering parity** lane (Round 4H, package `0.8.10`): deterministic `--format md` for `ci-boundaries` and `validate-change`, matching `ci-check` / `ci-targeted` report conventions; JSON default unchanged.
 - A **shared-memory service** lane (Phase B3.3, package `0.8.11`): audited lifecycle over B3.2 SQLite, per-registered-project `memory_enabled` opt-in, CLI verbs, optional `context_builder` approved-memory section; orchestration/provider paths remain memory-free; global default still disabled.
+- **Governance documents** (Project Sentinel, package `0.8.12`): [`docs/CONSTITUTION.md`](CONSTITUTION.md) and [`docs/SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md) adopted as permanent / long-term vision docs. **Does not** unlock Round 4D2, self-modification, memory auto-enable, or any runtime capability.
 
 ### It is not
 
@@ -430,6 +431,15 @@ Source: `docs/ROADMAP.md`.
 - No live-model wiring; no auto-populate; Equitify untouched; Round 4D2 remains **LOCKED**; `STAGE_ORDER` / `4a.1` unchanged
 - Package **`0.8.11`**
 
+### Project Sentinel — Constitutional Adoption (governance docs only)
+
+- Adopted verbatim [`docs/CONSTITUTION.md`](CONSTITUTION.md) (AI Development OS Constitution v1.0) and [`docs/SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md) (Self-Build Strategy / Claude Master Handoff), with Strategy framing as **long-term vision, not implementation status**
+- Light pointers at top of [`docs/SECURITY_MODEL.md`](SECURITY_MODEL.md) and [`docs/PROJECT_BOUNDARIES.md`](PROJECT_BOUNDARIES.md); honest Phase A–H reconciliation in [`docs/ROADMAP.md`](ROADMAP.md)
+- **Phase A (“Finish Version 1”) is not closed** — remaining real providers / e2e real execution / cost-token tracking stay behind Round **4D2** (still **LOCKED**)
+- Governed memory **B3.1–B3.3** remains complete; Constitution Phase **1–7** numbering differs from Strategy Phase **A–H** (both noted in ROADMAP)
+- Equitify untouched; memory enablement / orchestration / provider execution code untouched; no capability unlock
+- Package **`0.8.12`**
+
 ---
 
 ## 11. Equitify is not connected
@@ -449,6 +459,8 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | Doc | Topic |
 | --- | --- |
 | `README.md` | Install, Round 4A/4B status |
+| `docs/CONSTITUTION.md` | AI Development OS Constitution v1.0 (governance) |
+| `docs/SELF_BUILD_STRATEGY.md` | Self-Build Strategy (long-term vision, not implementation status) |
 | `docs/ARCHITECTURE.md` | Layers and data flow (through Round 4B) |
 | `docs/ROUND_3A_SAFE_EXECUTION_DESIGN.md` | Round 3A safe execution design |
 | `docs/ROUND_3B_PROVIDER_ADAPTER_DESIGN.md` | Round 3B provider adapter design |
