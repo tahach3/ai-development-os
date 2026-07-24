@@ -1,12 +1,18 @@
 # Constitutional Court — Deterministic Gate Design
 
-**Status:** Design only (no production implementation yet)  
-**Baseline:** package **0.8.12** · HEAD `92f1378` · branch `master`  
-**Constitution:** [`CONSTITUTION.md`](CONSTITUTION.md) Article XIV (Court); related I–II, V, VIII, X–XIII, XV, XVII  
-**Operational priors:** [`SECURITY_MODEL.md`](SECURITY_MODEL.md), [`PROJECT_BOUNDARIES.md`](PROJECT_BOUNDARIES.md), `config/risk_levels.yaml`  
+**Status:** Implemented (package **0.8.13**) — deterministic local preflight; no LLM / no 4D2
+
+**Baseline (design):** package **0.8.12** · HEAD `92f1378` · branch `master`
+
+**Implementation:** package **0.8.13** · Article XIV Court checkers + `approve_plan` major-change gate
+
+**Constitution:** [`CONSTITUTION.md`](CONSTITUTION.md) Article XIV (Court); related I–II, V, VIII, X–XIII, XV, XVII
+
+**Operational priors:** [`SECURITY_MODEL.md`](SECURITY_MODEL.md), [`PROJECT_BOUNDARIES.md`](PROJECT_BOUNDARIES.md), `config/risk_levels.yaml`
+
 **Code style priors:** `lifecycle_gates.py`, `review_gate.py`, `approval.py`, `ci_boundaries.py`, `fingerprints.py`
 
-**Not in scope (LOCKED this round):** Round 4D2 / live models / network / paid APIs; wiring memory into orchestration; Equitify; LLM-based Court; auto-blocking merge/push/deploy; version bump; production Python checker.
+**Not in scope (still LOCKED / deferred):** Round 4D2 / live models / network / paid APIs; wiring memory into orchestration; Equitify content inspection; LLM-based Court; auto-blocking merge/push/deploy; soft-bypass of `rejected`; mandatory CI `STAGE_ORDER` insert.
 
 ---
 

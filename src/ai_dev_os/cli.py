@@ -110,6 +110,7 @@ def cmd_init(_args: argparse.Namespace) -> int:
         "workspace/orchestrations",
         "workspace/provider_executions",
         "workspace/ci_runs",
+        "workspace/court_records",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     registry_path = root / "config" / "projects.yaml"
@@ -656,6 +657,87 @@ def cmd_approve_plan(args: argparse.Namespace) -> int:
     print(f"approved_fingerprint: {plan.approved_fingerprint}")
     print(f"approved_timestamp: {plan.approved_timestamp}")
     return 0
+
+
+def cmd_constitutional_check(args: argparse.Namespace) -> int:
+    """Deterministic Article XIV Court preflight — local, no network/providers."""
+    from .constitutional_court import (
+        CourtEvidenceEnvelope,
+        evaluate_constitutional_court,
+        exit_code_for_verdict,
+    )
+    from .court_store import CourtStore
+
+    try:
+        registry = ProjectRegistry()
+        task = TaskStore().load(args.task_id)
+        plan = PlanStore().load(args.plan_id)
+        # Registry load refuses Equitify registration; path sentinels handled in Court.
+        _ = registry.get(plan.project_id)
+        if plan.task_id != task.id:
+            raise ValidationError(
+                f"plan.task_id {plan.task_id!r} does not match --task-id {task.id!r}"
+            )
+        if plan.project_id != task.project_id:
+            raise ValidationError("plan.project_id does not match task.project_id")
+
+        evidence = CourtEvidenceEnvelope()
+        if args.evidence:
+            evid_path = Path(args.evidence)
+            if not evid_path.is_file():
+                print(f"ERROR: evidence file not found: {evid_path}", file=sys.stderr)
+                return 4
+            try:
+                raw = json.loads(evid_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                print(f"ERROR: malformed evidence JSON: {exc}", file=sys.stderr)
+                return 4
+            if not isinstance(raw, dict):
+                print("ERROR: evidence JSON must be an object", file=sys.stderr)
+                return 4
+            evidence = CourtEvidenceEnvelope.from_dict(raw)
+
+        evaluated_by = (args.evaluated_by or "").strip()
+        if not evaluated_by:
+            print("ERROR: --evaluated-by is required", file=sys.stderr)
+            return 4
+
+        force_required = bool(getattr(args, "required", False))
+        force_advisory = bool(getattr(args, "advisory", False))
+        if force_required and force_advisory:
+            print("ERROR: --required and --advisory are mutually exclusive", file=sys.stderr)
+            return 4
+
+        record = evaluate_constitutional_court(
+            task,
+            plan,
+            evidence,
+            evaluated_by=evaluated_by,
+            force_required=True if force_required else None,
+            force_advisory=force_advisory,
+        )
+        store = CourtStore()
+        out_path = store.save(record)
+        if args.output:
+            Path(args.output).write_text(
+                json.dumps(record.to_dict(), indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        payload = record.to_dict()
+        if args.json:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(f"Court record: {record.record_id}")
+            print(f"  verdict: {record.verdict.value}")
+            print(f"  required: {record.required}")
+            print(f"  failure_classes: {', '.join(record.failure_classes) or '(none)'}")
+            print(f"  next_action: {record.next_action}")
+            print(f"  persisted: {out_path}")
+            print(f"  content_fingerprint: {record.content_fingerprint}")
+        return exit_code_for_verdict(record.verdict)
+    except (ValidationError, ProjectRegistryError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 4
 
 
 def cmd_reject_plan(args: argparse.Namespace) -> int:
@@ -1940,6 +2022,29 @@ def build_parser() -> argparse.ArgumentParser:
     p_ap.add_argument("--approver", required=True)
     p_ap.add_argument("--note", default=None)
     p_ap.set_defaults(func=cmd_approve_plan)
+
+    p_cc = sub.add_parser(
+        "constitutional-check",
+        help="Deterministic Constitutional Court preflight (Article XIV; no LLM/network)",
+    )
+    p_cc.add_argument("--task-id", required=True)
+    p_cc.add_argument("--plan-id", required=True)
+    p_cc.add_argument("--evidence", default=None, help="Path to evidence envelope JSON")
+    p_cc.add_argument("--evaluated-by", required=True, help="Independent reviewer identity")
+    p_cc_mode = p_cc.add_mutually_exclusive_group()
+    p_cc_mode.add_argument(
+        "--required",
+        action="store_true",
+        help="Force required evaluation semantics",
+    )
+    p_cc_mode.add_argument(
+        "--advisory",
+        action="store_true",
+        help="Force advisory (optional) evaluation; does not block approve-plan",
+    )
+    p_cc.add_argument("--output", default=None, help="Optional copy of Court record JSON")
+    p_cc.add_argument("--json", action="store_true", help="Emit machine-readable Court record")
+    p_cc.set_defaults(func=cmd_constitutional_check)
 
     p_rp = sub.add_parser("reject-plan", help="Reject a plan")
     p_rp.add_argument("--plan-id", required=True)

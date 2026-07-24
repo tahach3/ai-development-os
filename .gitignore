@@ -66,6 +66,8 @@ workspace/provider_pins/*
 !workspace/provider_pins/.gitkeep
 workspace/memory/*
 !workspace/memory/.gitkeep
+workspace/court_records/*
+!workspace/court_records/.gitkeep
 
 # Local project registry (example stays tracked)
 config/projects.yaml

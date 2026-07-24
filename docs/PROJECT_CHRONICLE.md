@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-24 · **Package version:** `0.8.12` · **Round:** 4H + Phase B3.3 + Project Sentinel (Constitution / Self-Build Strategy governance docs)
+**As of:** 2026-07-24 · **Package version:** `0.8.13` · **Round:** 4H + Phase B3.3 + Project Sentinel (Constitution / Self-Build Strategy + Constitutional Court)
 
 ---
 
@@ -28,6 +28,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **Markdown rendering parity** lane (Round 4H, package `0.8.10`): deterministic `--format md` for `ci-boundaries` and `validate-change`, matching `ci-check` / `ci-targeted` report conventions; JSON default unchanged.
 - A **shared-memory service** lane (Phase B3.3, package `0.8.11`): audited lifecycle over B3.2 SQLite, per-registered-project `memory_enabled` opt-in, CLI verbs, optional `context_builder` approved-memory section; orchestration/provider paths remain memory-free; global default still disabled.
 - **Governance documents** (Project Sentinel, package `0.8.12`): [`docs/CONSTITUTION.md`](CONSTITUTION.md) and [`docs/SELF_BUILD_STRATEGY.md`](SELF_BUILD_STRATEGY.md) adopted as permanent / long-term vision docs. **Does not** unlock Round 4D2, self-modification, memory auto-enable, or any runtime capability.
+- A **Constitutional Court** lane (Project Sentinel, package `0.8.13`): deterministic Article XIV preflight (`constitutional-check`) over structured evidence — five pure checks, auditable Court records, major-change `approve_plan` gate (additional required artifact). **Not** an LLM reviewer; **not** a 4D2 unlock; Equitify path sentinels only (no Equitify content reads); CI `STAGE_ORDER` unchanged.
 
 ### It is not
 
@@ -439,6 +440,15 @@ Source: `docs/ROADMAP.md`.
 - Governed memory **B3.1–B3.3** remains complete; Constitution Phase **1–7** numbering differs from Strategy Phase **A–H** (both noted in ROADMAP)
 - Equitify untouched; memory enablement / orchestration / provider execution code untouched; no capability unlock
 - Package **`0.8.12`**
+
+### Project Sentinel — Constitutional Court (deterministic preflight)
+
+- Design: [`docs/CONSTITUTIONAL_COURT_DESIGN.md`](CONSTITUTIONAL_COURT_DESIGN.md) (Article XIV five-question rule tables)
+- Pure evaluators in `constitutional_court.py` + `court_store.py`; CLI `constitutional-check`; records under `workspace/court_records/` (gitignored runtime)
+- `approve_plan` requires a fresh fingerprint-bound Court `pass` / `pass_with_notes` for **major** changes only (additional artifact; human approval still required). Low/medium non-major paths unchanged
+- Independence: required high/critical runs forbid `evaluated_by == planner_agent` (`self_review_forbidden`)
+- No LLM Court; no Equitify content reads (path/sentinel only); Round 4D2 remains **LOCKED**; CI `STAGE_ORDER` / schema `4a.1` unchanged
+- Package **`0.8.13`**
 
 ---
 

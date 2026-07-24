@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from .constitutional_court import CourtEvidenceEnvelope, is_major_change
+from .court_store import CourtStore
 from .fingerprints import fingerprint_plan, fingerprint_task
-from .models import Plan, PlanStatus, RiskLevel, Task, TaskStatus, utc_now_iso
+from .models import Plan, PlanStatus, RiskLevel, TaskStatus, utc_now_iso
 from .plan_store import PlanStore
 from .task_store import TaskStore
 from .validation import ValidationError, apply_status_transition, validate_plan_transition
@@ -34,6 +38,8 @@ def approve_plan(
     *,
     approver: str,
     note: str | None = None,
+    court_store: CourtStore | None = None,
+    workspace_root: Path | None = None,
 ) -> Plan:
     plan = plan_store.load(plan_id)
     if plan.status is not PlanStatus.READY_FOR_APPROVAL:
@@ -58,6 +64,24 @@ def approve_plan(
             f"Task must be planned before plan approval (got {task.status.value})"
         )
 
+    # §5.2: major changes require an additional fresh matching Court pass artifact.
+    # Low/medium non-major plans are unaffected (no court metadata locked).
+    court_meta: dict[str, str] | None = None
+    if is_major_change(task, plan, CourtEvidenceEnvelope()):
+        store = court_store or CourtStore(workspace_root)
+        plan_fp = fingerprint_plan(plan.to_dict())
+        record = store.latest_passing_for_plan(plan.plan_id, plan_fp)
+        if record is None:
+            raise ValidationError(
+                "Constitutional Court required: major change needs a fresh matching "
+                "Court pass/pass_with_notes record (same plan fingerprint) before "
+                "approve-plan; run constitutional-check then retry"
+            )
+        court_meta = {
+            "court_record_id": record.record_id,
+            "court_content_fingerprint": record.content_fingerprint,
+        }
+
     fp = refresh_content_fingerprint(plan)
     plan.status = PlanStatus.APPROVED
     plan.approved_by = approver_norm
@@ -73,6 +97,8 @@ def approve_plan(
     meta["approved_plan_fingerprint"] = fp
     meta["task_fingerprint_at_approval"] = fingerprint_task(task.to_dict())
     meta["starting_commit_at_approval"] = plan.starting_commit
+    if court_meta:
+        meta.update(court_meta)
     task.metadata = meta
     task_store.update(task)
     return plan
