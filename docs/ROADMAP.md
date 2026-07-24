@@ -145,6 +145,14 @@ Local CI, quality gates, and pull-request validation foundation:
 - Package **`0.8.8`**
 - Round **4D2 remains LOCKED**; Equitify disconnected
 
+## Round 4H (complete) — Markdown rendering parity (local only)
+
+- Design: `docs/ROUND_4H_MD_RENDERING_PARITY_DESIGN.md`
+- `ci-boundaries --format md` / `validate-change --format md` via `render_boundary_summary` / `render_validate_change_summary` in `ci_report.py`
+- JSON remains default; exit codes and `to_dict()` shapes unchanged; `STAGE_ORDER` / `4a.1` unchanged
+- Package **`0.8.10`**
+- Round **4D2 remains LOCKED**; Equitify disconnected; memory untouched/disabled
+
 ## Later (only with explicit approval)
 
 - Pin GitHub Actions to immutable commit SHAs

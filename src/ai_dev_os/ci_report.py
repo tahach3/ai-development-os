@@ -115,6 +115,162 @@ def render_ci_summary(run: CIRun, *, artifact_path: str | None = None) -> str:
     return "\n".join(lines) + "\n"
 
 
+def render_boundary_summary(result: Any) -> str:
+    """Render a BoundaryCheckResult (or its to_dict()) as deterministic Markdown."""
+    data = result.to_dict() if hasattr(result, "to_dict") else dict(result)
+    ok = bool(data.get("ok"))
+    findings = list(data.get("findings") or [])
+    failure_classes = list(data.get("failure_classes") or [])
+    files_examined = list(data.get("files_examined") or [])
+
+    lines: list[str] = []
+    lines.append("# Boundary check")
+    lines.append("")
+    lines.append(f"- **OK:** {str(ok).lower()}")
+    lines.append(f"- **Files examined:** {len(files_examined)}")
+    lines.append(
+        f"- **Failure classes:** {', '.join(failure_classes) if failure_classes else '(none)'}"
+    )
+    lines.append(f"- **Findings:** {len(findings)}")
+    lines.append("")
+
+    if findings:
+        lines.append("## Findings")
+        lines.append("")
+        for finding in findings:
+            path = finding.get("path", "") if isinstance(finding, dict) else finding.path
+            project_id = (
+                finding.get("project_id", "")
+                if isinstance(finding, dict)
+                else finding.project_id
+            )
+            reason = finding.get("reason", "") if isinstance(finding, dict) else finding.reason
+            failure_class = (
+                finding.get("failure_class", "")
+                if isinstance(finding, dict)
+                else finding.failure_class
+            )
+            detail = finding.get("detail", "") if isinstance(finding, dict) else finding.detail
+            blocker = (
+                finding.get("blocker", True)
+                if isinstance(finding, dict)
+                else getattr(finding, "blocker", True)
+            )
+            lines.append(
+                f"- `{path}` ({project_id}): `{reason}` / `{failure_class}` — {detail} "
+                f"[blocker={str(bool(blocker)).lower()}]"
+            )
+        lines.append("")
+
+    if files_examined:
+        lines.append("## Files examined")
+        lines.append("")
+        for path in files_examined:
+            lines.append(f"- `{path}`")
+        lines.append("")
+
+    lines.append(
+        f"_{len(findings)} finding(s); {len(files_examined)} file(s) examined. "
+        f"No automatic merge or deploy._"
+    )
+    return "\n".join(lines) + "\n"
+
+
+def render_validate_change_summary(summary: Any) -> str:
+    """Render a PRValidationSummary (or its to_dict()) as deterministic Markdown."""
+    data = summary.to_dict() if hasattr(summary, "to_dict") else dict(summary)
+    findings = list(data.get("findings") or [])
+    failure_classes = list(data.get("failure_classes") or [])
+    files_examined = list(data.get("files_examined") or [])
+    starting = data.get("starting_commit") or ""
+    compared = data.get("compared_base_commit")
+    run_id = data.get("run_id") or ""
+
+    lines: list[str] = []
+    lines.append(f"# Validate change `{run_id}`")
+    lines.append("")
+    lines.append(f"- **Verdict:** `{data.get('final_verdict', '')}`")
+    lines.append(f"- **Trigger:** {data.get('trigger_type', '')}")
+    lines.append(f"- **Policy decision:** {data.get('policy_decision', '')}")
+    lines.append(f"- **Blocker:** {str(bool(data.get('blocker', False))).lower()}")
+    lines.append(
+        f"- **Human review required:** "
+        f"{str(bool(data.get('human_review_required', False))).lower()}"
+    )
+    lines.append(f"- **Starting commit:** `{(starting or '(none)')[:12]}`")
+    if compared:
+        lines.append(f"- **Compared base:** `{str(compared)[:12]}`")
+    else:
+        lines.append("- **Compared base:** `(none)`")
+    lines.append(f"- **Duration:** {_fmt_duration(data.get('duration_seconds', 0))}s")
+    lines.append(f"- **Schema version:** {data.get('schema_version', '')}")
+    lines.append(f"- **CI policy version:** {data.get('ci_policy_version', '')}")
+    lines.append(f"- **Repository:** {data.get('repository_identity', '') or '(none)'}")
+    if data.get("started_at"):
+        lines.append(f"- **Started:** {data.get('started_at')}")
+    if data.get("finished_at"):
+        lines.append(f"- **Finished:** {data.get('finished_at')}")
+    lines.append(f"- **Audit id:** `{run_id}`")
+    lines.append(f"- **Next action:** {data.get('next_action') or '(none)'}")
+    lines.append(f"- **Auto-approve:** {str(bool(data.get('auto_approve', False))).lower()}")
+    lines.append(f"- **Auto-merge:** {str(bool(data.get('auto_merge', False))).lower()}")
+    lines.append(f"- **Files examined:** {len(files_examined)}")
+    lines.append(f"- **Findings:** {len(findings)}")
+    lines.append("")
+
+    if findings:
+        lines.append("## Findings")
+        lines.append("")
+        for finding in findings:
+            if isinstance(finding, dict):
+                path = finding.get("path", "")
+                category = finding.get("category", "")
+                severity = finding.get("severity", "")
+                failure_class = finding.get("failure_class", "")
+                summary_text = finding.get("summary", "")
+                blocker = finding.get("blocker", False)
+                hrr = finding.get("human_review_required", False)
+            else:
+                path = finding.path
+                category = finding.category
+                severity = finding.severity
+                failure_class = finding.failure_class
+                summary_text = finding.summary
+                blocker = finding.blocker
+                hrr = finding.human_review_required
+            lines.append(
+                f"- `{path}` [{category}/{severity}] `{failure_class}`: {summary_text} "
+                f"[blocker={str(bool(blocker)).lower()}, "
+                f"human_review={str(bool(hrr)).lower()}]"
+            )
+        lines.append("")
+
+    if failure_classes:
+        lines.append("## Failure classes")
+        lines.append("")
+        for fc in failure_classes:
+            lines.append(f"- {fc}")
+        lines.append("")
+
+    if files_examined:
+        lines.append("## Files examined")
+        lines.append("")
+        for path in files_examined:
+            lines.append(f"- `{path}`")
+        lines.append("")
+
+    blockers = sum(
+        1
+        for f in findings
+        if (f.get("blocker") if isinstance(f, dict) else getattr(f, "blocker", False))
+    )
+    lines.append(
+        f"_{len(findings)} finding(s); {blockers} blocker(s); "
+        f"{len(files_examined)} file(s) examined. No automatic merge or approve._"
+    )
+    return "\n".join(lines) + "\n"
+
+
 def render_comparison(cmp_dict: dict[str, Any]) -> str:
     """Render a CI run comparison dict as Markdown."""
     lines: list[str] = []

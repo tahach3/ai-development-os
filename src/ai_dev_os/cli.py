@@ -1175,7 +1175,12 @@ def cmd_validate_change(args: argparse.Namespace) -> int:
     except (ValidateChangeError, CIConfigError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
-    print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
+    if getattr(args, "format", "json") == "md":
+        from .ci_report import render_validate_change_summary
+
+        print(render_validate_change_summary(summary), end="")
+    else:
+        print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
     return exit_code_for_pr_summary(summary)
 
 
@@ -1203,7 +1208,12 @@ def cmd_ci_boundaries(args: argparse.Namespace) -> int:
     except (CIConfigError, ValidateChangeError, OSError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
-    print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+    if getattr(args, "format", "json") == "md":
+        from .ci_report import render_boundary_summary
+
+        print(render_boundary_summary(result), end="")
+    else:
+        print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
     return 0 if result.ok else 1
 
 
@@ -1998,6 +2008,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_vc.add_argument("--base", default=None, help="Base ref (e.g. master); omit for working tree")
     p_vc.add_argument("--head", default="HEAD")
+    p_vc.add_argument("--format", choices=["json", "md"], default="json")
     p_vc.set_defaults(func=cmd_validate_change)
 
     p_bound = sub.add_parser(
@@ -2012,6 +2023,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         help="Explicit relative path to check (repeatable; skips git diff when set)",
     )
+    p_bound.add_argument("--format", choices=["json", "md"], default="json")
     p_bound.set_defaults(func=cmd_ci_boundaries)
 
     p_br = sub.add_parser(

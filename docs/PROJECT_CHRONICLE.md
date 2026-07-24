@@ -1,7 +1,7 @@
 # AI Development OS — Project Chronicle
 
 Human-oriented summary of everything shipped to date in this repository.  
-**As of:** 2026-07-24 · **Package version:** `0.8.9` · **Round:** 4G + Phase B3.2 (shared memory SQLite, disabled by default)
+**As of:** 2026-07-24 · **Package version:** `0.8.10` · **Round:** 4H (MD rendering parity) + Phase B3.2 (shared memory SQLite, disabled by default)
 
 ---
 
@@ -25,6 +25,7 @@ Human-oriented summary of everything shipped to date in this repository.
 - A **local-CI hardening** lane (on top of 4A/4E/4F, package `0.8.7`): CI run history + regression comparison (`ci-history` / `ci-compare`), human-readable Markdown CI reports (`ci-check` / `ci-targeted --format md`), and a cross-platform executable-path redaction fix — all additive, with the fixed CI `STAGE_ORDER` and `4a.1` schema unchanged.
 - A **ci-targeted selection quality** lane (Round 4G, package `0.8.8`): import-string scanning for changed modules plus broad-impact fail-safe notes — never a silent empty-green selection for high-fanout paths.
 - A **shared-memory SQLite persistence** lane (Phase B3.2, package `0.8.9`): local stdlib `sqlite3` schema/migrations/repository behind disabled-by-default config; read-only `memory-status`; no service orchestration or auto-enable.
+- A **Markdown rendering parity** lane (Round 4H, package `0.8.10`): deterministic `--format md` for `ci-boundaries` and `validate-change`, matching `ci-check` / `ci-targeted` report conventions; JSON default unchanged.
 
 ### It is not
 
@@ -410,6 +411,14 @@ Source: `docs/ROADMAP.md`.
 - No provider/orchestration/CI auto-wiring; no FTS5/embeddings; Equitify untouched; Round 4D2 remains **LOCKED**; `STAGE_ORDER` / `4a.1` unchanged
 - Package **`0.8.9`**
 
+### Round 4H — Markdown rendering parity (`ci-boundaries` / `validate-change`)
+
+- Design: [`docs/ROUND_4H_MD_RENDERING_PARITY_DESIGN.md`](ROUND_4H_MD_RENDERING_PARITY_DESIGN.md)
+- Added `render_boundary_summary` / `render_validate_change_summary` in `ci_report.py` (same conventions as `render_ci_summary` / `render_comparison`)
+- CLI: `ci-boundaries --format md` and `validate-change --format md`; default remains JSON with unchanged exit codes and envelope shapes
+- No schema/`STAGE_ORDER` change; memory untouched/disabled; Equitify untouched; Round 4D2 remains **LOCKED**
+- Package **`0.8.10`**
+
 ---
 
 ## 11. Equitify is not connected
@@ -441,6 +450,7 @@ Until then, treat Equitify as a hard off-limits path for all AI Development OS w
 | `docs/ROUND_4D1_2_AUTH_AND_NONINTERACTIVE_DESIGN.md` | Round 4D1.2 auth + noninteractive design |
 | `docs/ROUND_4D1_3_CODEX_HEADLESS_PROVIDER_DESIGN.md` | Round 4D1.3 Codex headless-provider design |
 | `docs/ROUND_4E_BOUNDARY_ENFORCEMENT_DESIGN.md` | Round 4E multi-project boundary enforcement design |
+| `docs/ROUND_4H_MD_RENDERING_PARITY_DESIGN.md` | Round 4H Markdown rendering parity (`ci-boundaries` / `validate-change`) |
 | `docs/OPEN_SOURCE_ADOPTION_ROADMAP.md` | Open-source adoption roadmap (OS remains authority) |
 | `docs/PROVIDER_READINESS_STANDARD.md` | Round 4D1 / 4D1.1 / 4D1.2 / 4D1.3 readiness standard / CLI contract |
 | `docs/PROVIDER_AUTH_NONINTERACTIVE_STANDARD.md` | Round 4D1.2 auth + noninteractive standard |
